@@ -1,48 +1,20 @@
 import { Helmet } from 'react-helmet-async';
-import { filter } from 'lodash';
-import { sentenceCase } from 'change-case';
-import { useState } from 'react';
-// @mui
-import {
-  Card,
-  Table,
-  Stack,
-  Paper,
-  Avatar,
-  Button,
-  Popover,
-  Checkbox,
-  TableRow,
-  MenuItem,
-  TableBody,
-  TableCell,
-  Container,
-  Typography,
-  IconButton,
-  TableContainer,
-  TablePagination,
-} from '@mui/material';
-// components
-import Label from '../components/label';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Avatar, Card, Table, Stack, Paper, Button, Popover, Checkbox, TableRow, MenuItem, TableBody, TableCell, Container, Typography, IconButton, TableContainer, TablePagination, } from '@mui/material';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
-// sections
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-// mock
-import USERLIST from '../_mock/user';
-
-// ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
-  { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
-  { id: '' },
+  { id: 'nameClient', label: 'Nombre', alignRight: false },
+  { id: 'apellidoClient', label: 'Apellido', alignRight: false },
+  { id: 'DPI', label: 'DPI', alignRight: false },
+  { id: 'estadoCivil', label: 'Estado Civil', alignRight: false },
+  { id: 'Trabajando', label: 'Trabaja', alignRight: false },
+  { id: 'cantidadHijos', label: 'Cantidad de Hijos', alignRight: false },
+  { id: 'idCliente', label: '', alignRight: false }, 
 ];
-
-// ----------------------------------------------------------------------
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -68,25 +40,30 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return array.filter((_user) => _user && _user.nameClient.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
 
 export default function UserPage() {
   const [open, setOpen] = useState(null);
-
   const [page, setPage] = useState(0);
-
   const [order, setOrder] = useState('asc');
-
   const [selected, setSelected] = useState([]);
-
-  const [orderBy, setOrderBy] = useState('name');
-
+  const [orderBy, setOrderBy] = useState('nameClient');
   const [filterName, setFilterName] = useState('');
-
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [clientes, setClientes] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes')
+      .then(response => {
+        setClientes(response.data);
+      })
+      .catch(error => {
+        console.error('Error al obtener los datos de los clientes:', error);
+      });
+  }, []);
 
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
@@ -104,7 +81,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = clientes.map((n) => n.nameClient);
       setSelected(newSelecteds);
       return;
     }
@@ -140,16 +117,16 @@ export default function UserPage() {
     setFilterName(event.target.value);
   };
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
+  const filteredUsers = applySortFilter(clientes, getComparator(order, orderBy), filterName);
 
   const isNotFound = !filteredUsers.length && !!filterName;
 
   return (
     <>
       <Helmet>
-        <title> Clientes </title>
+        <title>Clientes</title>
       </Helmet>
 
       <Container>
@@ -158,7 +135,7 @@ export default function UserPage() {
             Clientes
           </Typography>
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
-            New User
+            Nuevo Cliente
           </Button>
         </Stack>
 
@@ -172,44 +149,43 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={clientes.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, name, role, status, company, avatarUrl, isVerified } = row;
-                    const selectedUser = selected.indexOf(name) !== -1;
+                    const {
+                      idCliente,
+                      nameClient,
+                      apellidoClient,
+                      DPI,
+                      estadoCivil,
+                      Trabajando,
+                      cantidadHijos,
+                    } = row;
+                    const selectedUser = selected.indexOf(nameClient) !== -1;
 
                     return (
-                      <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
+                      <TableRow key={idCliente} hover tabIndex={-1} role="checkbox" selected={selectedUser}>
                         <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
+                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, nameClient)} />
                         </TableCell>
-
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
-                            <Typography variant="subtitle2" noWrap>
-                              {name}
-                            </Typography>
+                            <Avatar alt={nameClient} />
+                            <Typography variant="subtitle2">{nameClient}</Typography>
                           </Stack>
                         </TableCell>
-
-                        <TableCell align="left">{company}</TableCell>
-
-                        <TableCell align="left">{role}</TableCell>
-
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
-
-                        <TableCell align="left">
-                          <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
-                        </TableCell>
-
+                        <TableCell align="left">{apellidoClient}</TableCell>
+                        <TableCell align="left">{DPI}</TableCell>
+                        <TableCell align="left">{estadoCivil}</TableCell>
+                        <TableCell align="left">{Trabajando}</TableCell>
+                        <TableCell align="left">{cantidadHijos}</TableCell>
                         <TableCell align="right">
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
-                            <Iconify icon={'eva:more-vertical-fill'} />
+                            {/* Iconify y resto del código */}
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -217,7 +193,7 @@ export default function UserPage() {
                   })}
                   {emptyRows > 0 && (
                     <TableRow style={{ height: 53 * emptyRows }}>
-                      <TableCell colSpan={6} />
+                      <TableCell colSpan={8} />
                     </TableRow>
                   )}
                 </TableBody>
@@ -225,20 +201,15 @@ export default function UserPage() {
                 {isNotFound && (
                   <TableBody>
                     <TableRow>
-                      <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
-                        <Paper
-                          sx={{
-                            textAlign: 'center',
-                          }}
-                        >
+                      <TableCell align="center" colSpan={8} sx={{ py: 3 }}>
+                        <Paper sx={{ textAlign: 'center' }}>
                           <Typography variant="h6" paragraph>
-                            Not found
+                            No encontrado
                           </Typography>
-
                           <Typography variant="body2">
-                            No results found for &nbsp;
+                            No se encontraron resultados para &nbsp;
                             <strong>&quot;{filterName}&quot;</strong>.
-                            <br /> Try checking for typos or using complete words.
+                            <br /> Intenta verificar errores tipográficos o usar palabras completas.
                           </Typography>
                         </Paper>
                       </TableCell>
@@ -252,7 +223,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={clientes.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -280,13 +251,11 @@ export default function UserPage() {
         }}
       >
         <MenuItem>
-          <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
-          Edit
+          {/* Iconify y resto del código */}
         </MenuItem>
 
         <MenuItem sx={{ color: 'error.main' }}>
-          <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
-          Delete
+          {/* Iconify y resto del código */}
         </MenuItem>
       </Popover>
     </>

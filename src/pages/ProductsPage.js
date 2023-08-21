@@ -1,18 +1,47 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio, Button, TextField, Stack } from '@mui/material';
+import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio, Button, TextField, Stack, Card, } from '@mui/material';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import axios from 'axios';
 
+// Estilos personalizados para el DatePicker
+const datePickerStyles = {
+  border: '1px solid #ced4da',
+  padding: '0.375rem 0.75rem',
+  fontSize: '1rem',
+  lineHeight: '1.5',
+  borderRadius: '0.25rem',
+  outline: 'none',
+  transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+  width: '100%',
+  boxSizing: 'border-box',
+
+  '&:focus': {
+    borderColor: '#80bdff',
+    boxShadow: '0 0 0 0.2rem rgba(0, 123, 255, 0.25)',
+  },
+};
 export default function ProductsPage() {
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [voucherNumber, setVoucherNumber] = useState('');
   const [name, setName] = useState('');
+  const [monto, setMonto] = useState('');
+  const [actividad, setActividad] = useState('');
   const [lastName, setLastName] = useState('');
   const [description, setDescription] = useState('');
-  const [isNIT, setIsNIT] = useState(false);
+  const [isVoucher, setIsVoucher] = useState(false);
   const [nit, setNIT] = useState('');
+  const [state, setState] = useState({
+    fecha: new Date()
+  });
+  const handleFechaChange = (date) => {
+    setState({ ...state, fecha: date });
+  };
 
   const handlePaymentMethodChange = (event) => {
     setPaymentMethod(event.target.value);
+    setIsVoucher(event.target.value === 'voucher');
   };
 
   const handleVoucherNumberChange = (event) => {
@@ -22,6 +51,12 @@ export default function ProductsPage() {
   const handleNameChange = (event) => {
     setName(event.target.value);
   };
+  const handleMontoChange = (event) => {
+    setMonto(event.target.value);
+  };
+  const handleActividadChange = (event) => {
+    setActividad(event.target.value);
+  }
 
   const handleLastNameChange = (event) => {
     setLastName(event.target.value);
@@ -31,38 +66,39 @@ export default function ProductsPage() {
     setDescription(event.target.value);
   };
 
-  const handleNITOptionChange = (event) => {
-    setIsNIT(event.target.value === 'nit');
-    setNIT('');
-  };
-
   const handleNITChange = (event) => {
     setNIT(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-
-    // Aquí puedes implementar la lógica para procesar el pago según el método seleccionado
-    if (paymentMethod === 'voucher') {
-      console.log('Número de voucher:', voucherNumber);
-      // Lógica para procesar el pago con voucher
-    } else {
-      console.log('Pago en efectivo');
-      // Lógica para procesar el pago en efectivo
+  
+    const formData = {
+      paymentMethod,
+      voucherNumber,
+      name,
+      lastName,
+      fecha: state.fecha,
+      actividad,
+      monto,
+      description,
+      nit,
+    };
+  
+    try {
+      const response = await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/pagar', formData);
+      console.log('Respuesta del servidor:', response.data);
+      // Aquí podrías realizar acciones adicionales dependiendo de la respuesta del servidor
+    } catch (error) {
+      console.error('Error al enviar datos:', error);
+      // Manejo de errores
     }
-
-    console.log('Nombre:', name);
-    console.log('Apellido:', lastName);
-    console.log('Descripción:', description);
-    console.log('Es NIT:', isNIT);
-    console.log('NIT:', nit);
-  };
+  };  
 
   return (
     <>
       <Helmet>
-        <title> Pagos </title>
+        <title>Pagos</title>
       </Helmet>
 
       <Container>
@@ -70,41 +106,44 @@ export default function ProductsPage() {
           Pagos
         </Typography>
 
-        <form onSubmit={handleSubmit}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <FormControl component="fieldset">
-              <RadioGroup aria-label="payment-method" name="paymentMethod" value={paymentMethod} onChange={handlePaymentMethodChange}>
-                <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
-                <FormControlLabel value="voucher" control={<Radio />} label="Voucher" />
-              </RadioGroup>
-            </FormControl>
-
-            {paymentMethod === 'voucher' && (
-              <FormControl>
-                <TextField
-                  type="text"
-                  label="Número de Voucher"
-                  value={voucherNumber}
-                  onChange={handleVoucherNumberChange}
-                />
+        <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white' }}>
+          <form onSubmit={handleSubmit}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <FormControl component="fieldset">
+                <Typography variant='h5'>Tipo de pago</Typography>
+                <RadioGroup
+                  aria-label="payment-method"
+                  name="paymentMethod"
+                  value={paymentMethod}
+                  onChange={handlePaymentMethodChange}
+                >
+                  <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
+                  <FormControlLabel value="voucher" control={<Radio />} label="Voucher" />
+                </RadioGroup>
               </FormControl>
-            )}
-          </Stack>
 
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
-            <TextField
-              label="Nombre"
-              value={name}
-              onChange={handleNameChange}
-              fullWidth
-            />
+              {isVoucher && (
+                <FormControl>
+                  <TextField
+                    type="text"
+                    label="Número de Voucher"
+                    value={voucherNumber}
+                    onChange={handleVoucherNumberChange}
+                  />
+                </FormControl>
+              )}
+            </Stack>
 
-            <TextField
-              label="Apellido"
-              value={lastName}
-              onChange={handleLastNameChange}
-              fullWidth
-            />
+            <Stack direction="row" spacing={2}>
+              <TextField label="Nombre" value={name} onChange={handleNameChange} fullWidth />
+              <TextField label="Apellido" value={lastName} onChange={handleLastNameChange} fullWidth />
+            </Stack>
+            <Stack direction="row" spacing={2} alignItems="flex-end">
+              <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={datePickerStyles} sx={{ mt:2 }} />} />
+              <TextField label="N° Actividad" value={actividad} onChange={handleActividadChange} fullWidth />
+            </Stack>
+
+            <TextField label="Monto" value={monto} onChange={handleMontoChange} fullWidth sx={{ mt:2 }} />
 
             <TextField
               label="Descripción"
@@ -113,35 +152,29 @@ export default function ProductsPage() {
               fullWidth
               multiline
               rows={4}
-            />
-          </Stack>
-
-          <FormControl component="fieldset" sx={{ mt: 2 }}>
-            <RadioGroup aria-label="nit-option" name="nitOption" value={isNIT ? 'nit' : 'cf'} onChange={handleNITOptionChange}>
-              <FormControlLabel value="nit" control={<Radio />} label="NIT" />
-              <FormControlLabel value="cf" control={<Radio />} label="C/F" />
-            </RadioGroup>
-          </FormControl>
-
-          {isNIT && (
-            <TextField
-              label="NIT"
-              value={nit}
-              onChange={handleNITChange}
-              fullWidth
               sx={{ mt: 2 }}
-              inputProps={{
-                inputMode: 'numeric',
-                pattern: '[0-9]*',
-                maxLength: 9,
-              }}
-            />          
-          )}
+            />
 
-          <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
-            Pagar
-          </Button>
-        </form>
+            {isVoucher && (
+              <TextField
+                label="NIT"
+                value={nit}
+                onChange={handleNITChange}
+                fullWidth
+                sx={{ mt: 2 }}
+                inputProps={{
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                  maxLength: 9,
+                }}
+              />
+            )}
+
+            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleSubmit}>
+              Pagar
+            </Button>
+          </form>
+        </Card>
       </Container>
     </>
   );
