@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio, Button, TextField, Stack, Card, } from '@mui/material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import swal from 'sweetalert';
 import axios from 'axios';
 
 // Estilos personalizados para el DatePicker
@@ -23,13 +24,13 @@ const datePickerStyles = {
   },
 };
 export default function ProductsPage() {
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
-  const [voucherNumber, setVoucherNumber] = useState('');
-  const [name, setName] = useState('');
+  const [tipoPago, settipoPago] = useState('efectivo');
+  const [noVoucher, setVoucherNumber] = useState('');
+  const [nombre, setName] = useState('');
   const [monto, setMonto] = useState('');
-  const [actividad, setActividad] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [description, setDescription] = useState('');
+  const [idActividad, setActividad] = useState('');
+  const [apellido, setLastName] = useState('');
+  const [descripcion, setDescription] = useState('');
   const [isVoucher, setIsVoucher] = useState(false);
   const [nit, setNIT] = useState('');
   const [state, setState] = useState({
@@ -40,7 +41,7 @@ export default function ProductsPage() {
   };
 
   const handlePaymentMethodChange = (event) => {
-    setPaymentMethod(event.target.value);
+    settipoPago(event.target.value);
     setIsVoucher(event.target.value === 'voucher');
   };
 
@@ -69,19 +70,27 @@ export default function ProductsPage() {
   const handleNITChange = (event) => {
     setNIT(event.target.value);
   };
+  const PagoRealizado = () => {
+    swal({
+      title: 'Pago Realizado',
+      text: 'Su pago ha sido efectuado',
+      icon: 'success',
+      timer: '500'
+    })
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
   
     const formData = {
-      paymentMethod,
-      voucherNumber,
-      name,
-      lastName,
-      fecha: state.fecha,
-      actividad,
+      tipoPago,
+      noVoucher,
+      nombre,
+      apellido,
+      fechaPago: state.fecha,
+      idActividad,
       monto,
-      description,
+      descripcion,
       nit,
     };
   
@@ -89,6 +98,16 @@ export default function ProductsPage() {
       const response = await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/pagar', formData);
       console.log('Respuesta del servidor:', response.data);
       // Aquí podrías realizar acciones adicionales dependiendo de la respuesta del servidor
+      PagoRealizado();
+      settipoPago('');
+      setName('');
+      setLastName('');
+      setState({ fecha: new Date() });
+      setActividad('');
+      setMonto('');
+      setDescription('');
+      setVoucherNumber('');
+      setNIT('');
     } catch (error) {
       console.error('Error al enviar datos:', error);
       // Manejo de errores
@@ -114,7 +133,7 @@ export default function ProductsPage() {
                 <RadioGroup
                   aria-label="payment-method"
                   name="paymentMethod"
-                  value={paymentMethod}
+                  value={tipoPago}
                   onChange={handlePaymentMethodChange}
                 >
                   <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
@@ -127,7 +146,7 @@ export default function ProductsPage() {
                   <TextField
                     type="text"
                     label="Número de Voucher"
-                    value={voucherNumber}
+                    value={noVoucher}
                     onChange={handleVoucherNumberChange}
                   />
                 </FormControl>
@@ -135,19 +154,19 @@ export default function ProductsPage() {
             </Stack>
 
             <Stack direction="row" spacing={2}>
-              <TextField label="Nombre" value={name} onChange={handleNameChange} fullWidth />
-              <TextField label="Apellido" value={lastName} onChange={handleLastNameChange} fullWidth />
+              <TextField label="Nombre" value={nombre} onChange={handleNameChange} fullWidth />
+              <TextField label="Apellido" value={apellido} onChange={handleLastNameChange} fullWidth />
             </Stack>
             <Stack direction="row" spacing={2} alignItems="flex-end">
               <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={datePickerStyles} sx={{ mt:2 }} />} />
-              <TextField label="N° Actividad" value={actividad} onChange={handleActividadChange} fullWidth />
+              <TextField label="N° Actividad" value={idActividad} onChange={handleActividadChange} fullWidth />
             </Stack>
 
             <TextField label="Monto" value={monto} onChange={handleMontoChange} fullWidth sx={{ mt:2 }} />
 
             <TextField
               label="Descripción"
-              value={description}
+              value={descripcion}
               onChange={handleDescriptionChange}
               fullWidth
               multiline

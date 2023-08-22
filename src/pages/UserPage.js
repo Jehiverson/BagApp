@@ -11,7 +11,7 @@ const TABLE_HEAD = [
   { id: 'apellidoClient', label: 'Apellido', alignRight: false },
   { id: 'DPI', label: 'DPI', alignRight: false },
   { id: 'estadoCivil', label: 'Estado Civil', alignRight: false },
-  { id: 'Trabajando', label: 'Trabaja', alignRight: false },
+  { id: 'trabajando', label: 'Trabaja', alignRight: false },
   { id: 'cantidadHijos', label: 'Cantidad de Hijos', alignRight: false },
   { id: 'idCliente', label: '', alignRight: false }, 
 ];
@@ -162,7 +162,7 @@ export default function UserPage() {
                       apellidoClient,
                       DPI,
                       estadoCivil,
-                      Trabajando,
+                      trabajando,
                       cantidadHijos,
                     } = row;
                     const selectedUser = selected.indexOf(nameClient) !== -1;
@@ -181,7 +181,7 @@ export default function UserPage() {
                         <TableCell align="left">{apellidoClient}</TableCell>
                         <TableCell align="left">{DPI}</TableCell>
                         <TableCell align="left">{estadoCivil}</TableCell>
-                        <TableCell align="left">{Trabajando}</TableCell>
+                        <TableCell align="left">{trabajando}</TableCell>
                         <TableCell align="left">{cantidadHijos}</TableCell>
                         <TableCell align="right">
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
