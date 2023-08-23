@@ -26,12 +26,16 @@ const datePickerStyles = {
   },
 };
 const TABLE_HEAD = [
-  { id: 'nameClient', label: 'Nombre', alignRight: false },
-  { id: 'apellidoClient', label: 'Apellido', alignRight: false },
-  { id: 'DPI', label: 'DPI', alignRight: false },
-  { id: 'estadoCivil', label: 'Estado Civil', alignRight: false },
-  { id: 'trabajando', label: 'Trabaja', alignRight: false },
-  { id: 'cantidadHijos', label: 'Cantidad de Hijos', alignRight: false },
+  { id: 'idCliente', label: 'Cliente', alignRight: false },
+  { id: 'nombre', label: 'Nombre', alignRight: false },
+  { id: 'apellido', label: 'Apellido', alignRight: false },
+  { id: 'fechaPago', label: 'Fecha de Pago', alignRight: false },
+  { id: 'Monto', label: 'Monto', alignRight: false },
+  { id: 'idActividad', label: 'N° Actividad', alignRight: false },
+  { id: 'noVoucher', label: 'N° Voucher', alignRight: false },
+  { id: 'tipoPago', label: 'Tipo de Pago', alignRight: false },
+  { id: 'nit', label: 'NIT', alignRight: false },
+  { id: 'descripcion', label: 'Descripcion', alignRight: false },
   { id: 'idCliente', label: '', alignRight: false }, 
 ];
 function descendingComparator(a, b, orderBy) {
