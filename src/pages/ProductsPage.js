@@ -4,6 +4,7 @@ import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import swal from 'sweetalert';
+import Select from 'react-select';
 import axios from 'axios';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
@@ -69,7 +70,8 @@ export default function ProductsPage() {
   const [noVoucher, setVoucherNumber] = useState('');
   const [nombre, setName] = useState('');
   const [monto, setMonto] = useState('');
-  const [idActividad, setActividad] = useState('');
+  const [actividades, setActividades] = useState('');
+  const [selectedActividad, setSelectedActividad] = useState('');
   const [apellido, setLastName] = useState('');
   const [descripcion, setDescription] = useState('');
   const [isVoucher, setIsVoucher] = useState(false);
@@ -103,9 +105,9 @@ export default function ProductsPage() {
   const handleMontoChange = (event) => {
     setMonto(event.target.value);
   };
-  const handleActividadChange = (event) => {
-    setActividad(event.target.value);
-  }
+  const handleActividadChange = (selectedOption) => {
+    setSelectedActividad(selectedOption);
+  };  
 
   const handleLastNameChange = (event) => {
     setLastName(event.target.value);
@@ -126,15 +128,39 @@ export default function ProductsPage() {
       timer: '500'
     })
   }
-
   useEffect(() => {
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/pagar')
-      .then(response => {
+    async function getClientes() {
+      try {
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar');
         setClientes(response.data);
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error al obtener los datos de los clientes:', error);
-      });
+      }
+    }
+
+    async function getActividades() {
+      try {
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+        const actividadData = response.data;
+
+        const actividadesFormatted = actividadData.map(actividad => ({
+          value: actividad.idActividad,
+          label: actividad.nombreActividad
+        }));
+
+        actividadesFormatted.unshift({
+          value: 0,
+          label: 'Seleccione una Actividad'
+        });
+
+        setActividades(actividadesFormatted);
+      } catch (error) {
+        console.error('Error al obtener las actividades:', error);
+      }
+    }
+
+    getClientes();
+    getActividades();
   }, []);
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -186,14 +212,14 @@ export default function ProductsPage() {
       nombre,
       apellido,
       fechaPago: state.fecha,
-      idActividad,
+      idActividad: selectedActividad ? selectedActividad.value : 0,
       monto,
       descripcion,
       nit,
     };
   
     try {
-      const response = await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/pagar', formData);
+      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar', formData);
       console.log('Respuesta del servidor:', response.data);
       // Aquí podrías realizar acciones adicionales dependiendo de la respuesta del servidor
       PagoRealizado();
@@ -201,11 +227,11 @@ export default function ProductsPage() {
       setName('');
       setLastName('');
       setState({ fecha: new Date() });
-      setActividad('');
       setMonto('');
       setDescription('');
       setVoucherNumber('');
       setNIT('');
+      setSelectedActividad(null);
     } catch (error) {
       console.error('Error al enviar datos:', error);
       // Manejo de errores
@@ -259,7 +285,7 @@ export default function ProductsPage() {
             </Stack>
             <Stack direction="row" spacing={2} alignItems="flex-end">
               <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={datePickerStyles} sx={{ mt:2 }} />} />
-              <TextField label="N° Actividad" value={idActividad} onChange={handleActividadChange} fullWidth />
+              <Select value={selectedActividad} onChange={handleActividadChange} options={actividades} fullWidth />
             </Stack>
 
             <TextField label="Monto" value={monto} onChange={handleMontoChange} fullWidth sx={{ mt:2 }} />

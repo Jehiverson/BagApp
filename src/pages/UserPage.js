@@ -1,7 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Avatar, Card, Table, Stack, Paper, Button, Popover, Checkbox, TableRow, MenuItem, TableBody, TableCell, Container, Typography, IconButton, TableContainer, TablePagination, } from '@mui/material';
+import { Avatar, Card, Table, Stack, Paper, Button, Popover, Checkbox, TableRow, MenuItem, TableBody, TableCell, Container, Typography, IconButton, TableContainer, TablePagination, TextField, } from '@mui/material';
+import Modal from 'react-modal';
+import moment from 'moment'; // Cambia la importación de moment
+import 'moment/locale/es'; // Importa el idioma si lo deseas
+import 'moment-timezone';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
@@ -54,16 +58,72 @@ export default function UserPage() {
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [clientes, setClientes] = useState([]);
+  const [isEditar, setIsEditar] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    nameClient: '',
+    apellidoClient: '',
+    fechaNacimiento: '',
+    dpi: '',
+    estadoCivil: '',
+    trabajando: '',
+    cantidadHijos: ''
+  });
 
   useEffect(() => {
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes')
+    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes')
       .then(response => {
         setClientes(response.data);
+        setSelectedClient(response.data.find(client => client.idCliente === 1));
       })
       .catch(error => {
         console.error('Error al obtener los datos de los clientes:', error);
       });
   }, []);
+  const createEvent = async () => {
+    try {
+      const localStart = moment(newEvent.fechaInicio).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
+      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades', {
+        ...newEvent,
+        fechaNacimiento: localStart,
+      });
+      closeNewEventModal();
+      setNewEvent({
+        nameClient: '',
+        apellidoClient: '',
+        fechaNacimiento: '',
+        dpi: '',
+        estadoCivil: '',
+        trabajando: '',
+        cantidadHijos: '',
+      });
+    } catch (error) {
+      console.error('Error creating event:', error);
+    }
+  }; 
+  const handleEditClick = () => {
+    setIsEditar(true);
+  };
+  const handleCancelEdit = () => {
+    setIsEditar(false);
+  };
+  const handleUpdateClient = () => {
+    axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${selectedClient.idCliente}`, selectedClient)
+      .then(response => {
+        // Handle success if needed
+      })
+      .catch(error => {
+        console.error('Error al actualizar el cliente:', error);
+      });
+    setIsEditar(false);
+  };
+  const handleFieldChange = (fieldName, value) => {
+    setSelectedClient(prevClient => ({
+      ...prevClient,
+      [fieldName]: value
+    }));
+  };
 
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
@@ -116,6 +176,13 @@ export default function UserPage() {
     setPage(0);
     setFilterName(event.target.value);
   };
+  const openNewEventModal = () => {
+    setNewEventModalOpen(true);
+  };
+
+  const closeNewEventModal = () => {
+    setNewEventModalOpen(false);
+  };
 
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
 
@@ -134,10 +201,91 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             Clientes
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={openNewEventModal}>
             Nuevo Cliente
           </Button>
         </Stack>
+        <Modal
+          isOpen={isNewEventModalOpen}
+          onRequestClose={closeNewEventModal}
+          style={{
+            overlay: {
+              zIndex: 1000,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+            content: {
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '8px',
+              padding: '20px',
+              maxWidth: '600px',
+              margin: 'auto',
+            },
+          }}
+        >
+          {/* Contenido del modal */}
+          <div>
+            <TextField
+              type="text"
+              label="Nombre"
+              value={newEvent.nameClient}
+              onChange={(e) => setNewEvent({ ...newEvent, nameClient: e.target.value })}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              type="text"
+              label="Apellido"
+              value={newEvent.apellidoClient}
+              onChange={(e) => setNewEvent({ ...newEvent, apellidoClient: e.target.value })}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Nacimiento</h6>
+              <TextField
+                type="date"
+                value={newEvent.fechaNacimiento}
+                onChange={(e) => setNewEvent({ ...newEvent, fechaNacimiento: e.target.value })}
+                fullWidth
+                sx={{ marginBottom: 2 }}
+              />
+            </div>
+            <TextField
+              type="text"
+              label="DPI"
+              value={newEvent.dpi}
+              onChange={(e) => setNewEvent({ ...newEvent, dpi: e.target.value })}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              type="text"
+              label="Estado Civil"
+              value={newEvent.estadoCivil}
+              onChange={(e) => setNewEvent({ ...newEvent, estadoCivil: e.target.value })}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            />
+            
+            <TextField
+              type="number"
+              label="Cantidad de Hijos"
+              value={newEvent.cantidadHijos}
+              onChange={(e) => setNewEvent({ ...newEvent, cantidadHijos: e.target.value })}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            />
+          </div>
+          {/* Botones */}
+          <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
+            Crear Evento
+          </Button>
+          <Button onClick={closeNewEventModal} variant="contained">
+            Cancelar
+          </Button>
+        </Modal>
 
         <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
@@ -258,6 +406,36 @@ export default function UserPage() {
           {/* Iconify y resto del código */}
         </MenuItem>
       </Popover>
+      <br />
+      <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white' }}>
+        <Typography variant='h5'>Informacion Personal</Typography>
+        {selectedClient && (
+          <div>
+            {isEditar ? (
+              <>
+                <TextField
+                  value={selectedClient.nameClient}
+                  onChange={(e) => handleFieldChange('nameClient', e.target.value)}
+                />
+                <TextField
+                  value={selectedClient.apellidoClient}
+                  onChange={(e) => handleFieldChange('apellidoClient', e.target.value)}
+                />
+                {/* Repeat similar TextField components for other fields */}
+                <Button onClick={handleUpdateClient}>Guardar Cambios</Button>
+                <Button onClick={handleCancelEdit}>Cancelar</Button>
+              </>
+            ) : (
+              <>
+                <Typography variant='h6'>{selectedClient.nameClient}</Typography>
+                <Typography variant='h6'>{selectedClient.apellidoClient}</Typography>
+                {/* Repeat similar Typography components for other fields */}
+                <Button onClick={handleEditClick}>Editar</Button>
+              </>
+            )}
+          </div>
+        )}
+      </Card>
     </>
   );
 }

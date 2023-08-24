@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { Button, Container, Stack, Typography, TextField } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import Select from 'react-select';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
@@ -12,6 +13,8 @@ import Modal from 'react-modal';
 import Iconify from '../components/iconify';
 
 export default function BlogPage() {
+  const [cliente, setCliente] = useState('');
+  const [selectedCliente, setSelectedCliente] = useState('');
   Modal.setAppElement('#root'); // Agrega esta línea
   const localizer = momentLocalizer(moment);
   const [events, setEvents] = useState([]);
@@ -28,7 +31,7 @@ export default function BlogPage() {
   });
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
+      const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
         title: event.nombreActividad,
@@ -46,18 +49,43 @@ export default function BlogPage() {
   };
 
   useEffect(() => {
+    async function getActividades() {
+      try {
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
+        const clienteData = response.data;
+
+        const actividadesFormatted = clienteData.map(actividad => ({
+          value: actividad.idCliente,
+          label: actividad.nameClient
+        }));
+
+        actividadesFormatted.unshift({
+          value: 0,
+          label: 'Seleccione un Cliente'
+        });
+
+        setCliente(actividadesFormatted);
+      } catch (error) {
+        console.error('Error al obtener las actividades:', error);
+      }
+    }
+    getActividades();
     fetchEvents();
   }, []);
+  const handleActividadChange = (selectedOption) => {
+    setSelectedCliente(selectedOption);
+  };  
 
   const createEvent = async () => {
     try {
       const localStart = moment(newEvent.fechaInicio).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
       const localEnd = moment(newEvent.fechaFinal).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
   
-      await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/actividades', {
+      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades', {
         ...newEvent,
         fechaInicio: localStart,
-        fechaFinal: localEnd
+        fechaFinal: localEnd,
+        idCliente: selectedCliente.value, // Usar el valor seleccionado del cliente
       });
   
       fetchEvents();
@@ -69,8 +97,9 @@ export default function BlogPage() {
         estadoActividad: '',
         fechaInicio: '',
         fechaFinal: '',
-        idCliente: ''
+        idCliente: 0,
       });
+      setSelectedCliente(null); 
     } catch (error) {
       console.error('Error creating event:', error);
     }
@@ -78,7 +107,7 @@ export default function BlogPage() {
 
   const deleteEvent = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/${id}`);
+      await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${id}`);
       fetchEvents();
       setSelectedEvent(null);
     } catch (error) {
@@ -88,7 +117,7 @@ export default function BlogPage() {
 
   const updateEvent = async (updatedEvent) => {
     try {
-      await axios.put(`backend_endpoint/events/${updatedEvent.id}`, updatedEvent);
+      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app${updatedEvent.id}`, updatedEvent);
       fetchEvents();
       setSelectedEvent(null);
     } catch (error) {
@@ -190,10 +219,15 @@ export default function BlogPage() {
             <TextField
               type="text"
               label="Estado"
-              value={newEvent.estadoActividad}
+              value={newEvent.estadoActividad || "Pendiente"}
               onChange={(e) => setNewEvent({ ...newEvent, estadoActividad: e.target.value })}
               fullWidth
               sx={{ marginBottom: 2 }}
+              disabled
+              InputProps={{
+                disableUnderline: true,
+                style: { cursor: 'not-allowed' },
+              }}
             />
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
               <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
@@ -215,14 +249,14 @@ export default function BlogPage() {
                 sx={{ marginBottom: 2 }}
               />
             </div>
-            <TextField
-              type="text"
-              label="Cliente"
-              value={newEvent.idCliente}
-              onChange={(e) => setNewEvent({ ...newEvent, idCliente: e.target.value })}
+            <Select
+              value={selectedCliente}
+              onChange={handleActividadChange}
+              options={cliente}
               fullWidth
               sx={{ marginBottom: 2 }}
             />
+            <br />
           </div>
           {/* Botones */}
           <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
