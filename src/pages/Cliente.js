@@ -56,10 +56,10 @@ export const handleDeleteSelected = async (selectedClient, clientes, setClientes
     const idCliente = selectedClient.idCliente;
 
     // Enviar una petición DELETE para eliminar el registro
-    await axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/api/clientes/${idCliente}`);
+    await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${idCliente}`);
 
     // Actualizar la lista de clientes después de eliminar
-    const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
+    const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
     setClientes(response.data);
   } catch (error) {
     console.error('Error al eliminar el registro:', error);
@@ -127,7 +127,7 @@ export default function UserPage() {
   }
 
   useEffect(() => {
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes')
+    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes')
       .then(response => {
         setClientes(response.data);
         setSelectedClient(response.data.find(client => client.idCliente === 1));
@@ -139,7 +139,7 @@ export default function UserPage() {
   const createEvent = async () => {
     try {
       const localStart = moment(newEvent.fechaNacimiento).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
-      await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/clientes', {
+      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', {
         ...newEvent,
         fechaNacimiento: localStart,
       });
@@ -155,7 +155,7 @@ export default function UserPage() {
         cantidadHijos: '',
       });
       // Actualizar la lista de clientes después de crear un nuevo evento
-    const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
+    const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
     setClientes(response.data);
     } catch (error) {
       console.error('Error creating event:', error);
@@ -347,7 +347,7 @@ export default function UserPage() {
           </div>
           {/* Botones */}
           <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
-            Crear Evento
+            Nuevo Cliente
           </Button>
           <Button onClick={closeNewEventModal} variant="contained">
             Cancelar
@@ -368,6 +368,7 @@ export default function UserPage() {
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
+                  showCheckbox
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
@@ -375,7 +376,7 @@ export default function UserPage() {
                       idCliente,
                       nameClient,
                       apellidoClient,
-                      DPI,
+                      dpi,
                       estadoCivil,
                       trabajando,
                       cantidadHijos,
@@ -394,7 +395,7 @@ export default function UserPage() {
                           </Stack>
                         </TableCell>
                         <TableCell align="left">{apellidoClient}</TableCell>
-                        <TableCell align="left">{DPI}</TableCell>
+                        <TableCell align="left">{dpi}</TableCell>
                         <TableCell align="left">{estadoCivil}</TableCell>
                         <TableCell align="left">{trabajando}</TableCell>
                         <TableCell align="left">{cantidadHijos}</TableCell>
