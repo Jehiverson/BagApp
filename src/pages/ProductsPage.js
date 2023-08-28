@@ -4,9 +4,8 @@ import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import swal from 'sweetalert';
+import Select from 'react-select';
 import axios from 'axios';
-import Scrollbar from '../components/scrollbar';
-import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 
 // Estilos personalizados para el DatePicker
 const datePickerStyles = {
@@ -25,62 +24,17 @@ const datePickerStyles = {
     boxShadow: '0 0 0 0.2rem rgba(0, 123, 255, 0.25)',
   },
 };
-const TABLE_HEAD = [
-  { id: 'idCliente', label: 'Cliente', alignRight: false },
-  { id: 'nombre', label: 'Nombre', alignRight: false },
-  { id: 'apellido', label: 'Apellido', alignRight: false },
-  { id: 'fechaPago', label: 'Fecha de Pago', alignRight: false },
-  { id: 'Monto', label: 'Monto', alignRight: false },
-  { id: 'idActividad', label: 'N° Actividad', alignRight: false },
-  { id: 'noVoucher', label: 'N° Voucher', alignRight: false },
-  { id: 'tipoPago', label: 'Tipo de Pago', alignRight: false },
-  { id: 'nit', label: 'NIT', alignRight: false },
-  { id: 'descripcion', label: 'Descripcion', alignRight: false },
-  { id: 'idCliente', label: '', alignRight: false }, 
-];
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-function getComparator(order, orderBy) {
-  return order === 'desc'
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-function applySortFilter(array, comparator, query) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-  if (query) {
-    return array.filter((_user) => _user && _user.nameClient.toLowerCase().indexOf(query.toLowerCase()) !== -1);
-  }
-  return stabilizedThis.map((el) => el[0]);
-}
 export default function ProductsPage() {
   const [tipoPago, settipoPago] = useState('efectivo');
   const [noVoucher, setVoucherNumber] = useState('');
   const [nombre, setName] = useState('');
   const [monto, setMonto] = useState('');
-  const [idActividad, setActividad] = useState('');
+  const [actividades, setActividades] = useState('');
+  const [selectedActividad, setSelectedActividad] = useState('');
   const [apellido, setLastName] = useState('');
   const [descripcion, setDescription] = useState('');
   const [isVoucher, setIsVoucher] = useState(false);
   const [nit, setNIT] = useState('');
-  const [clientes, setClientes] = useState([]);
-  const [page, setPage] = useState(0);
-  const [filterName, setFilterName] = useState('');
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [order, setOrder] = useState('asc');
-  const [selected, setSelected] = useState([]);
-  const [orderBy, setOrderBy] = useState('nameClient');
   const [state, setState] = useState({
     fecha: new Date()
   });
@@ -103,9 +57,9 @@ export default function ProductsPage() {
   const handleMontoChange = (event) => {
     setMonto(event.target.value);
   };
-  const handleActividadChange = (event) => {
-    setActividad(event.target.value);
-  }
+  const handleActividadChange = (selectedOption) => {
+    setSelectedActividad(selectedOption);
+  };  
 
   const handleLastNameChange = (event) => {
     setLastName(event.target.value);
@@ -126,56 +80,29 @@ export default function ProductsPage() {
       timer: '500'
     })
   }
-
   useEffect(() => {
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/pagar')
-      .then(response => {
-        setClientes(response.data);
-      })
-      .catch(error => {
-        console.error('Error al obtener los datos de los clientes:', error);
-      });
+    async function getActividades() {
+      try {
+        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
+        const actividadData = response.data;
+
+        const actividadesFormatted = actividadData.map(actividad => ({
+          value: actividad.idActividad,
+          label: actividad.nombreActividad
+        }));
+
+        actividadesFormatted.unshift({
+          value: 0,
+          label: 'Seleccione una Actividad'
+        });
+
+        setActividades(actividadesFormatted);
+      } catch (error) {
+        console.error('Error al obtener las actividades:', error);
+      }
+    }
+    getActividades();
   }, []);
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = clientes.map((n) => n.nameClient);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    setSelected(newSelected);
-  };
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
-  };
-
-  const handleFilterByName = (event) => {
-    setPage(0);
-    setFilterName(event.target.value);
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -186,7 +113,7 @@ export default function ProductsPage() {
       nombre,
       apellido,
       fechaPago: state.fecha,
-      idActividad,
+      idActividad: selectedActividad ? selectedActividad.value : 0,
       monto,
       descripcion,
       nit,
@@ -201,19 +128,31 @@ export default function ProductsPage() {
       setName('');
       setLastName('');
       setState({ fecha: new Date() });
-      setActividad('');
       setMonto('');
       setDescription('');
       setVoucherNumber('');
       setNIT('');
+      setSelectedActividad(null);
+
+      const idActividad = selectedActividad.value; // Obtén el idActividad de donde sea necesario
+      const idPago = response.data.idPago; // Suponiendo que obtienes el idPago de la respuesta del servidor
+      updateIdPagoInActividad(idActividad, idPago);
     } catch (error) {
       console.error('Error al enviar datos:', error);
       // Manejo de errores
     }
   };  
-  const filteredUsers = applySortFilter(clientes, getComparator(order, orderBy), filterName);
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
-  const isNotFound = !filteredUsers.length && !!filterName;
+  const updateIdPagoInActividad = async (idActividad, idPago) => {
+    try {
+      const response = await axios.put(`http://localhost:5000/bagapp-react/us-central1/app/api/actividadpagada/${idActividad}`, {
+        idPago: idPago,
+      });
+      console.log("Respuesta del servidor:", response.data);
+    } catch (error) {
+      console.error("Error al actualizar idPago en actividad:", error);
+      // Manejo de errores
+    }
+  };
   return (
     <>
       <Helmet>
@@ -259,7 +198,7 @@ export default function ProductsPage() {
             </Stack>
             <Stack direction="row" spacing={2} alignItems="flex-end">
               <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={datePickerStyles} sx={{ mt:2 }} />} />
-              <TextField label="N° Actividad" value={idActividad} onChange={handleActividadChange} fullWidth />
+              <Select value={selectedActividad} onChange={handleActividadChange} options={actividades} fullWidth />
             </Stack>
 
             <TextField label="Monto" value={monto} onChange={handleMontoChange} fullWidth sx={{ mt:2 }} />
@@ -293,98 +232,6 @@ export default function ProductsPage() {
               Pagar
             </Button>
           </form>
-        </Card>
-        <br />
-        <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white' }}>
-        <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
-        <Scrollbar>
-            <TableContainer sx={{ minWidth: 800 }}>
-              <Table>
-                <UserListHead
-                  order={order}
-                  orderBy={orderBy}
-                  headLabel={TABLE_HEAD}
-                  rowCount={clientes.length}
-                  numSelected={selected.length}
-                  onRequestSort={handleRequestSort}
-                  onSelectAllClick={handleSelectAllClick}
-                />
-                <TableBody>
-                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const {
-                      idPago,
-                      idCliente,
-                      nombre,
-                      apellido,
-                      fechaPago,
-                      monto,
-                      idActividad,
-                      noVoucher,
-                      tipoPago,
-                      nit,
-                      descripcion
-                    } = row;
-                    const selectedUser = selected.indexOf(nombre) !== -1;
-
-                    return (
-                      <TableRow key={idPago} hover tabIndex={-1} role="checkbox" selected={selectedUser}>
-                        <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, idCliente)} />
-                        </TableCell>
-                        <TableCell component="th" scope="row" padding="none">
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Typography variant="subtitle2">{idCliente}</Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell align="left">{nombre}</TableCell>
-                        <TableCell align="left">{apellido}</TableCell>
-                        <TableCell align="left">{fechaPago}</TableCell>
-                        <TableCell align="left">{monto}</TableCell>
-                        <TableCell align="left">{idActividad}</TableCell>
-                        <TableCell align="left">{noVoucher}</TableCell>
-                        <TableCell align="left">{tipoPago}</TableCell>
-                        <TableCell align="left">{nit}</TableCell>
-                        <TableCell align="left">{descripcion}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {emptyRows > 0 && (
-                    <TableRow style={{ height: 53 * emptyRows }}>
-                      <TableCell colSpan={8} />
-                    </TableRow>
-                  )}
-                </TableBody>
-
-                {isNotFound && (
-                  <TableBody>
-                    <TableRow>
-                      <TableCell align="center" colSpan={8} sx={{ py: 3 }}>
-                        <Paper sx={{ textAlign: 'center' }}>
-                          <Typography variant="h6" paragraph>
-                            No encontrado
-                          </Typography>
-                          <Typography variant="body2">
-                            No se encontraron resultados para &nbsp;
-                            <strong>&quot;{filterName}&quot;</strong>.
-                            <br /> Intenta verificar errores tipográficos o usar palabras completas.
-                          </Typography>
-                        </Paper>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                )}
-              </Table>
-            </TableContainer>
-          </Scrollbar>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={clientes.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
         </Card>
       </Container>
     </>

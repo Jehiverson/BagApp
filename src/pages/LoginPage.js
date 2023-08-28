@@ -43,6 +43,10 @@ const StyledContent = styled('div')(({ theme }) => ({
 
 export default function LoginPage() {
   const mdUp = useResponsive('up', 'md');
+  const handleLogin = () => {
+    
+    console.log('Inicio de sesión exitoso');
+  }
 
   return (
     <>
@@ -99,7 +103,7 @@ export default function LoginPage() {
               </Typography>
             </Divider>
 
-            <LoginForm />
+            <LoginForm onLogin={handleLogin} />
           </StyledContent>
         </Container>
       </StyledRoot>

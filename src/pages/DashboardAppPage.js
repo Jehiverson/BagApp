@@ -47,8 +47,8 @@ export default function DashboardAppPage() {
             </CardTitle>
           </CardHeader>
           <CardBody sx={{ mb: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ width: '30%' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ flex: '1 1 30%' }}>
                 <Typography variant="h6">Dinero Generado</Typography>
                 <BarChart width={300} height={200} data={moneyGeneratedData}>
                   <Bar dataKey="DineroGenerado" fill="rgba(75, 192, 192, 0.6)" />
@@ -58,7 +58,7 @@ export default function DashboardAppPage() {
                   <Legend />
                 </BarChart>
               </div>
-              <div style={{ width: '30%' }}>
+              <div style={{ flex: '1 1 30%' }}>
                 <Typography variant="h6">Actividades</Typography>
                 <PieChart width={400} height={300}>
                   <Pie
@@ -76,7 +76,7 @@ export default function DashboardAppPage() {
                   <Legend />
                 </PieChart>
               </div>
-              <div style={{ width: '30%' }}>
+              <div style={{ flex: '1 1 30%' }}>
                 <Typography variant="h6">Reportes Generados</Typography>
                 <BarChart width={300} height={200} data={reportsGeneratedData}>
                   <Bar dataKey="ReportesGenerados" fill="rgba(54, 162, 235, 0.6)" />
