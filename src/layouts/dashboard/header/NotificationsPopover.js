@@ -3,7 +3,7 @@ import { set, sub } from 'date-fns';
 import { noCase } from 'change-case';
 import { faker } from '@faker-js/faker';
 import { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import {Navigate} from 'react-router-dom';
 // @mui
 import { Box, List, Badge, Button, Avatar, Tooltip, Divider, Popover, Typography, IconButton, ListItemText, ListSubheader, ListItemAvatar, ListItemButton } from '@mui/material';
 // utils
@@ -127,10 +127,9 @@ NotificationItem.propTypes = {
 
 function NotificationItem({ notification }) {
   const { avatar, title } = renderContent(notification);
-  const history = useHistory();
 
   const handleGoToActivity = () => {
-    history.push('/dashboard/actividad');
+    return <Navigate to="/dashboard/actividad" />;
   };
 
   return (

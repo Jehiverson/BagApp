@@ -1,10 +1,13 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Container, Typography, Card, Slider, Button } from '@mui/material';
 import axios from 'axios';
+import { PDFViewer } from '@react-pdf/renderer';
+import DocuPDF from '../components/PDF/DocuPDF';
 
 export default function OpcionesPage() {
   const [ageRange, setAgeRange] = React.useState([18, 65]);
+  const [verPDF, setVerPdf] = useState(false);
 
   const handleSliderChange = (event, newValue) => {
     setAgeRange(newValue);
@@ -54,6 +57,17 @@ export default function OpcionesPage() {
             Guardar Rango
           </Button>
         </Card>
+        <br />
+        <Button onClick={() => setVerPdf(!verPDF)}>
+          {verPDF ? 'Ocultar PDF' : 'Ver PDF'}
+        </Button>
+        <div style={{ minHeight: '30vh' }}>
+          {verPDF && (
+            <PDFViewer style={{ width: '100%', height: '70vh' }}>
+              <DocuPDF />
+            </PDFViewer>
+          )}
+        </div>
       </Container>
     </>
   );

@@ -1,0 +1,74 @@
+/* plantillaPDF.css */
+
+.pdf-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #000;
+    width: 80%;
+    height: 100vh;
+  }
+  
+  .pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .pdf-header h1 {
+    font-size: 24px;
+  }
+  
+  .pdf-textarea textarea {
+    width: 300px;
+    height: 100px;
+    border: 1px solid #000;
+    padding: 10px;
+    resize: none;
+  }
+  
+  .pdf-table table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .pdf-table th,
+  .pdf-table td {
+    border: 1px solid #000;
+    padding: 12px 15px;
+    text-align: center;
+  }
+  
+  .pdf-table th {
+    background-color: #009879;
+    color: #ffffff;
+    font-weight: bold;
+  }
+  
+  .pdf-table th:first-child,
+  .pdf-table td:first-child {
+    text-align: left;
+  }
+  
+  .pdf-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+  }
+  
+  .pdf-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  }
+  
+  .pdf-table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+  }
+  
+  .pdf-table tbody tr.active-row {
+    font-weight: bold;
+    color: #009879;
+  }
+  

@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, CardContent } from '@mui/material';
+import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, Tooltip } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { sentenceCase } from 'change-case';
 import Select from 'react-select';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Modal from 'react-modal';
+import Label from '../components/label';
+import { UserListToolbar } from '../sections/@dashboard/blog';
+import { handleUpdateActivityStatus } from '../sections/@dashboard/blog/api';
 import Scrollbar from '../components/scrollbar';
-import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
+import { UserListHead } from '../sections/@dashboard/user';
 import Iconify from '../components/iconify';
 // Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
@@ -66,8 +70,11 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [nombreCliente, setNombreCliente] = useState('');
+  const [clientesMap, setClientesMap] = useState(new Map());
+  const [hoveredClientId, setHoveredClientId] = useState(null);
   const [cliente, setCliente] = useState('');
-  const [estado, setEstado] = useState('Aun no entregado');
+  const [actividades, setActividades] = useState([]);
   const [selectedCliente, setSelectedCliente] = useState('');
   Modal.setAppElement('#root'); // Agrega esta línea
   const localizer = momentLocalizer(moment);
@@ -86,57 +93,53 @@ export default function BlogPage() {
   const fetchEvents = async () => {
     try {
       const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
-      const currentDate = moment().startOf('day'); // Obtener la fecha actual
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
         title: event.nombreActividad,
         description: event.descripcionActividad,
         entrega: event.fechaEntrega,
         estado: event.estadoActividad,
-        start: moment(event.fechaInicio).toDate(), // Sin .utc() aquí, para que se interprete en la zona horaria local
-        end: moment(event.fechaFinal).toDate(), // Sin .utc() aquí, para que se interprete en la zona horaria local
+        start: moment(event.fechaInicio).toDate(),
+        end: moment(event.fechaFinal).toDate(),
         cliente: event.idCliente,
       }));
-  
-      // Actualizar estados de eventos
-      const updatedEvents = await Promise.all(filteredEvents.map(async event => {
-        const isPastStartDate = currentDate.isSameOrAfter(event.start);
-        const isPastEndDate = currentDate.isSameOrAfter(event.end);
-        let updatedEstado = event.estado; // Estado inicial
-  
-        if (isPastStartDate) {
-          if (!isPastEndDate) {
-            // Verificar si la fecha de inicio ha llegado pero la fecha de finalización aún no
-            updatedEstado = 'En proceso';
-          }
-        } else if (isPastEndDate) {
-          updatedEstado = 'Evento Finalizado'; // Actualizar estado si es posterior a la fecha de finalización
-        }
-  
-        try {
-          // Realizar la solicitud PUT para actualizar el estado en el servidor
-          await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividadEstado/${event.id}`, {
-            estadoActividad: updatedEstado,
-          });
-  
-          // Devolver el evento actualizado con el estado
-          return {
-            ...event,
-            estadoActividad: updatedEstado,
-          };
-        } catch (error) {
-          console.error(`Error updating event ${event.idActividad}:`, error);
-          return event; // Mantener el evento sin cambios en caso de error
-        }
-      }));
-  
-      console.log('updatedEvents:', updatedEvents); // Verifica los eventos actualizados
-  
-      setEvents(updatedEvents);
+      setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };  
+  const fetchData = async () => {
+    try {
+      // Obtener los datos de actividades
+      const actividadesResponse = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+      const actividadesData = actividadesResponse.data;
+
+      // Obtener los nombres de los clientes y almacenarlos en un mapa para acceso rápido
+      const idClientes = actividadesData.map(row => row.idCliente);
+      const newClientesMap = new Map(); // Nuevo mapa para almacenar los nombres de los clientes
+
+      // Realizar las llamadas a la API para obtener los nombres de los clientes
+      await Promise.all(idClientes.map(async id => {
+        try {
+          const clienteResponse = await axios.get(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${id}`);
+          newClientesMap.set(id, clienteResponse.data.nameClient);
+        } catch (error) {
+          console.error('Error obteniendo el nombre del cliente:', error);
+        }
+      }));
+
+      setClientesMap(newClientesMap); // Actualizar el estado de clientesMap
+
+      // Actualizar los datos de actividades con los nombres de los clientes
+      const actividadesConNombres = actividadesData.map(row => ({
+        ...row,
+        nombreCliente: newClientesMap.get(row.idCliente)
+      }));
+      setactividadData(actividadesConNombres);
+    } catch (error) {
+      console.error('Error al obtener los datos:', error);
+    }
+  } 
 
   useEffect(() => {
     async function getActividades() {
@@ -167,6 +170,7 @@ export default function BlogPage() {
       .catch(error => {
         console.error('Error al obtener los datos de los clientes:', error);
       });
+    fetchData();
     getActividades();
     fetchEvents();
   }, []);
@@ -211,23 +215,18 @@ export default function BlogPage() {
       console.error('Error deleting event:', error);
     }
   };
-  const handleEstadoEntregado = () => {
-    setEstado('Entregado'); // Cambiar el estado a "Entregado"
-  };
+  const updateActivityStatus = async () => {
+    if (selected.length === 1) {
+      const selectedId = selected[0];
 
-  const handleEstadoNoEntregado = () => {
-    setEstado('Aun no entregado'); // Cambiar el estado a "Aun no entregado"
-  };
-
-  const updateEvent = async (updatedEvent) => {
-    try {
-      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app${updatedEvent.id}`, updatedEvent);
-      fetchEvents();
-      setSelectedEvent(null);
-    } catch (error) {
-      console.error('Error updating event:', error);
+      try {
+        await handleUpdateActivityStatus(selectedId, { estadoActividad: 'Completa' }, actividadData, setactividadData);
+        setSelected([]);
+      } catch (error) {
+        console.error('Error updating activity status:', error);
+      }
     }
-  };
+  };    
 
   const openNewEventModal = () => {
     setNewEventModalOpen(true);
@@ -252,6 +251,30 @@ export default function BlogPage() {
       setOrder(isAsc ? 'desc' : 'asc');
       setOrderBy(property);
   };
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelecteds = actividadData.map((n) => n.nombreActividad);
+      setSelected(newSelecteds);
+      return;
+    }
+    setSelected([]);
+  };
+  const handleClick = (event, name) => {
+    console.log('Clicked activity ID:', name); // Agrega este console.log
+    const selectedIndex = selected.indexOf(name);
+    let newSelected = [];
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, name);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+    }
+    setSelected(newSelected);
+  };
+  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -299,22 +322,23 @@ export default function BlogPage() {
           <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
             Listado de Actividades con Pago
           </Typography>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={updateActivityStatus} selected={selected}  />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
               <Table>
                 <UserListHead
-                  order={order}
-                  orderBy={orderBy}
-                  headLabel={TABLE_HEAD}
-                  rowCount={actividadData.length}
-                  numSelected={selected.length}
-                  onRequestSort={handleRequestSort}
-                  showCheckbox={false}
-                />
+                    order={order}
+                    orderBy={orderBy}
+                    headLabel={TABLE_HEAD}
+                    rowCount={actividadData.length}
+                    numSelected={selected.length}
+                    onRequestSort={handleRequestSort}
+                    onSelectAllClick={handleSelectAllClick}
+                    showCheckbox
+                  />
                 <TableBody>
                   {filteredUsers
-                  .filter(row => row.idPago !== null && row.idPago !== '')
+                  .filter(row => row.idPago !== null && row.idPago !== "")
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => {
                     const {
@@ -329,17 +353,38 @@ export default function BlogPage() {
                       idPago,
                       idReporte,
                     } = row;
-
+                    const selectedUser = selected.indexOf(idActividad) !== -1;
                     return (
-                      <TableRow key={idActividad} hover tabIndex={-1}>
+                      <TableRow key={idActividad} hover tabIndex={-1} role="checkbox" selected={selectedUser} >
+                        <TableCell padding="checkbox">
+                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, idActividad)} />
+                        </TableCell>
                         <TableCell align="left">{idActividad}</TableCell>
                         <TableCell align="left">{nombreActividad}</TableCell>
                         <TableCell align="left">{descripcionActividad}</TableCell>
                         <TableCell align="left">{moment.utc(fechaEntrega).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
-                        <TableCell align="left">{estadoActividad}</TableCell>
+                        <TableCell align="left">
+                          {estadoActividad === 'Pendiente' ? (
+                            <Label color="error">{sentenceCase(estadoActividad)}</Label>
+                          ) : (
+                            <Label color="success">{sentenceCase(estadoActividad)}</Label>
+                          )}
+                        </TableCell>
                         <TableCell align="left">{moment.utc(fechaInicio).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{moment.utc(fechaFinal).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
-                        <TableCell align="left">{idCliente}</TableCell>
+                        <TableCell align="left">
+                          <Tooltip
+                            title={hoveredClientId === idCliente ? clientesMap.get(idCliente) : ''}
+                            placement="top"
+                          >
+                            <span
+                              onMouseEnter={() => setHoveredClientId(idCliente)}
+                              onMouseLeave={() => setHoveredClientId(null)}
+                            >
+                              {hoveredClientId === idCliente ? clientesMap.get(idCliente) : idCliente}
+                            </span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell align="left">{idPago}</TableCell>
                         <TableCell align="left">{idReporte}</TableCell>
                       </TableRow>
@@ -382,15 +427,6 @@ export default function BlogPage() {
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-        </Card>
-        <br />
-        <Card>
-          <CardContent>
-            <Typography variant="h5">Nombre de la Actividad</Typography>
-            <Typography variant="subtitle1">Estado: {estado}</Typography>
-            <Button onClick={handleEstadoEntregado}>Marcar como entregado</Button>
-            <Button onClick={handleEstadoNoEntregado}>Aun no entregado</Button>
-          </CardContent>
         </Card>
 
         <Modal
