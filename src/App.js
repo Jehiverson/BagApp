@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Router from './routes/routes';
 import ThemeProvider from './theme';
 import { StyledChart } from './components/chart';
@@ -27,6 +29,7 @@ export default function App() {
           <ScrollToTop />
           <StyledChart />
           <Router isAuthenticated={isAuthenticated} />
+          <ToastContainer />
         </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>

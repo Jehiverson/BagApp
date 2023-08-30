@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio, Button, TextField, Stack, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Checkbox, Paper, } from '@mui/material';
+import { Container, Typography, FormControl, RadioGroup, FormControlLabel, Radio, Button, TextField, Stack, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Paper, } from '@mui/material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import swal from 'sweetalert';
 import Select from 'react-select';
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
@@ -51,13 +52,11 @@ function descendingComparator(a, b, orderBy) {
   }
   return 0;
 }
-
 function getComparator(order, orderBy) {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
-
 function applySortFilter(array, comparator, query) {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
@@ -71,13 +70,12 @@ function applySortFilter(array, comparator, query) {
   return stabilizedThis.map((el) => el[0]);
 }
 export default function ProductsPage() {
-  const [pagoData, setpagoData] = useState([]);
-  const [selectedPago, setSelectedPago] = useState(null);
+  const [pagoData, setPagoData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');
-  const [selected, setSelected] = useState([]);
+  const [selected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [tipoPago, settipoPago] = useState('efectivo');
@@ -96,16 +94,13 @@ export default function ProductsPage() {
   const handleFechaChange = (date) => {
     setState({ ...state, fecha: date });
   };
-
   const handlePaymentMethodChange = (event) => {
     settipoPago(event.target.value);
     setIsVoucher(event.target.value === 'voucher');
   };
-
   const handleVoucherNumberChange = (event) => {
     setVoucherNumber(event.target.value);
   };
-
   const handleNameChange = (event) => {
     setName(event.target.value);
   };
@@ -115,26 +110,15 @@ export default function ProductsPage() {
   const handleActividadChange = (selectedOption) => {
     setSelectedActividad(selectedOption);
   };  
-
   const handleLastNameChange = (event) => {
     setLastName(event.target.value);
   };
-
   const handleDescriptionChange = (event) => {
     setDescription(event.target.value);
   };
-
   const handleNITChange = (event) => {
     setNIT(event.target.value);
   };
-  const PagoRealizado = () => {
-    swal({
-      title: 'Pago Realizado',
-      text: 'Su pago ha sido efectuado',
-      icon: 'success',
-      timer: '500'
-    })
-  }
   useEffect(() => {
     async function getActividades() {
       try {
@@ -156,17 +140,19 @@ export default function ProductsPage() {
         console.error('Error al obtener las actividades:', error);
       }
     }
-    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar')
-      .then(response => {
-        setpagoData(response.data);
-        setSelectedPago(response.data.find(pago => pago.idPago === 1));
-      })
-      .catch(error => {
-        console.error('Error al obtener los datos de los clientes:', error);
-      });
+    async function getPagos() {
+      try {
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar');
+        const pagoData = response.data;
+        setPagoData(pagoData);
+      } catch (error) {
+        console.error('Error al obtener los datos de los pagos:', error);
+      }
+    } 
+    getPagos();
     getActividades();
   }, []);
-
+  // Ingresar el pago a la base de datos
   const handleSubmit = async (event) => {
     event.preventDefault();
   
@@ -186,7 +172,7 @@ export default function ProductsPage() {
       const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar', formData);
       console.log('Respuesta del servidor:', response.data);
       // Aquí podrías realizar acciones adicionales dependiendo de la respuesta del servidor
-      PagoRealizado();
+      toast.success('Pago Realizado Con Exito');
       settipoPago('');
       setName('');
       setLastName('');
@@ -198,13 +184,14 @@ export default function ProductsPage() {
       setSelectedActividad(null);
 
       const idActividad = selectedActividad.value; // Obtén el idActividad de donde sea necesario
-      const idPago = response.data.idPago; // Suponiendo que obtienes el idPago de la respuesta del servidor
+      const { idPago } = response.data; // Usar desestructuración para obtener idPago de response.data
       updateIdPagoInActividad(idActividad, idPago);
     } catch (error) {
       console.error('Error al enviar datos:', error);
-      // Manejo de errores
+      toast.error("Error al cargar el pago");
     }
-  };  
+  };
+  // Actualizar la Actividad por el id de Pago
   const updateIdPagoInActividad = async (idActividad, idPago) => {
     try {
       const response = await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividadpagada/${idActividad}`, {
@@ -216,29 +203,19 @@ export default function ProductsPage() {
       // Manejo de errores
     }
   };
+
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = pagoData.map((n) => n.nombre);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-
   const handleChangeRowsPerPage = (event) => {
     setPage(0);
     setRowsPerPage(parseInt(event.target.value, 10));
   };
-
   const handleFilterByName = (event) => {
     setPage(0);
     setFilterName(event.target.value);
@@ -290,8 +267,15 @@ export default function ProductsPage() {
               <TextField label="Apellido" value={apellido} onChange={handleLastNameChange} fullWidth />
             </Stack>
             <Stack direction="row" spacing={2} alignItems="flex-end">
-              <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={datePickerStyles} sx={{ mt:2 }} />} />
-              <Select value={selectedActividad} onChange={handleActividadChange} options={actividades} fullWidth />
+              <DatePicker selected={state.fecha} onChange={handleFechaChange} customInput={<TextField sx={{ ...datePickerStyles, mt: 2 }} />} />
+              <div style={{ width: '100%', minWidth: 200 }}>
+                <Select
+                  value={selectedActividad}
+                  onChange={handleActividadChange}
+                  options={actividades}
+                  fullWidth
+                />
+              </div>
             </Stack>
 
             <TextField label="Monto" value={monto} onChange={handleMontoChange} fullWidth sx={{ mt:2 }} />
@@ -409,8 +393,11 @@ export default function ProductsPage() {
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-          <PaymentsPDFGenerator pagoData={pagoData} />
+          <div style={{ display: 'flex', justifyContent: 'left', alignItems: 'center', marginLeft: '15px', marginBottom: '20px' }}>
+            <PaymentsPDFGenerator pagoData={pagoData} />
+          </div>
         </Card>
+
       </Container>
     </>
   );

@@ -4,6 +4,7 @@ import { Container, Typography, Card, Slider, Button } from '@mui/material';
 import axios from 'axios';
 import { PDFViewer } from '@react-pdf/renderer';
 import DocuPDF from '../components/PDF/DocuPDF';
+import PlantillaPDF from '../components/PDF/plantillaPDF';
 
 export default function OpcionesPage() {
   const [ageRange, setAgeRange] = React.useState([18, 65]);
@@ -68,6 +69,7 @@ export default function OpcionesPage() {
             </PDFViewer>
           )}
         </div>
+        <PlantillaPDF />
       </Container>
     </>
   );

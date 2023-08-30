@@ -26,6 +26,7 @@
   },
   "rules": {
     "new-cap": "off",
+    "object-shorthand": "off",
     "no-new": 0,
     "no-alert": 0,
     "no-shadow": 0,

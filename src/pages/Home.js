@@ -4,63 +4,67 @@ import { Helmet } from 'react-helmet-async';
 import { Container, Typography, Card, CardContent, CardHeader } from '@mui/material';
 import { BarChart, Bar, PieChart, Pie, Tooltip, Legend, Cell, XAxis, YAxis } from 'recharts';
 
-export default function DashboardAppPage() {
-  const [actividadesData, setActividadesData] = useState([]);
-  const [moneyGeneratedData, setMoneyGeneratedData] = useState([]);
+export default function PaginaDashboardApp() {
+  const [datosActividades, setDatosActividades] = useState([]);
+  const [datosGenerados, setDatosGenerados] = useState([]);
 
   useEffect(() => {
+    // Obtener datos de actividades
     axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades')
       .then(response => {
-        const actividad = response.data;
-        const formattedData = actividad.map(actividad => {
-          const startDate = new Date(actividad.fechaInicio);
-          startDate.setHours(startDate.getHours() - 6); // Ajustar para el huso horario de Guatemala
-          const endDate = new Date(actividad.fechaFinal);
-          endDate.setHours(endDate.getHours() - 6); // Ajustar para el huso horario de Guatemala
-          const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const actividades = response.data;
+        const datosFormateados = actividades.map(actividad => {
+          // Formatear fechas y calcular duración en días
+          const fechaInicio = new Date(actividad.fechaInicio);
+          fechaInicio.setHours(fechaInicio.getHours() - 6); // Ajuste de huso horario
+          const fechaFinal = new Date(actividad.fechaFinal);
+          fechaFinal.setHours(fechaFinal.getHours() - 6); // Ajuste de huso horario
+          const duracionDias = Math.ceil((fechaFinal - fechaInicio) / (1000 * 60 * 60 * 24));
+
           return {
-            name: actividad.nombreActividad,
-            value: days,
-            color: getColor(),
+            nombre: actividad.nombreActividad,
+            duracion: duracionDias,
+            color: obtenerColor(),
           };
         });
-        setActividadesData(formattedData);
+        setDatosActividades(datosFormateados);
       })
       .catch(error => {
         console.error('Error al obtener actividades:', error);
       });
 
+    // Obtener datos de pagos
     axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar')
       .then(response => {
         const pagos = response.data;
-        const monthlyData = {}; // Objeto para almacenar los datos por mes
+        const datosMensuales = {};
 
         pagos.forEach(pago => {
           if (pago.fechaPago !== null) {
-            const paymentDate = new Date(pago.fechaPago);
-            paymentDate.setHours(paymentDate.getHours() - 6);
-            const month = paymentDate.toLocaleString('es-GT', { month: 'long' });
-            if (!monthlyData[month]) {
-              monthlyData[month] = 0;
+            const fechaPago = new Date(pago.fechaPago);
+            fechaPago.setHours(fechaPago.getHours() - 6);
+            const mes = fechaPago.toLocaleString('es-GT', { month: 'long' });
+            if (!datosMensuales[mes]) {
+              datosMensuales[mes] = 0;
             }
-            monthlyData[month] += pago.monto;
+            datosMensuales[mes] += pago.monto;
           }
         });
 
-        const formattedData = Object.keys(monthlyData).map(month => ({
-          name: month,
-          DineroGenerado: monthlyData[month],
+        const datosFormateados = Object.keys(datosMensuales).map(mes => ({
+          nombre: mes,
+          DineroGenerado: datosMensuales[mes],
         }));
 
-        setMoneyGeneratedData(formattedData);
+        setDatosGenerados(datosFormateados);
       })
       .catch(error => {
         console.error('Error al obtener datos de pagos:', error);
       });
   }, []);
 
-  const getColor = (index) => {
-    const colors = [
+  const obtenerColor = (indice) => {
+    const colores = [
       '#8884d8',
       '#82ca9d',
       '#ffc658',
@@ -69,29 +73,21 @@ export default function DashboardAppPage() {
       '#ffc658',
       '#82ca9d',
       '#d0ed57',
-      // Agrega más colores según necesites
+      // Agregar más colores según sea necesario
     ];
 
-    return colors[index % colors.length];
+    return colores[indice % colores.length];
   };
-
-  const reportsGeneratedData = [
-    { name: 'Enero', ReportesGenerados: 10 },
-    { name: 'Febrero', ReportesGenerados: 8 },
-    { name: 'Marzo', ReportesGenerados: 12 },
-    { name: 'Abril', ReportesGenerados: 6 },
-    { name: 'Mayo', ReportesGenerados: 9 },
-  ];
 
   return (
     <>
       <Helmet>
-        <title>Home</title>
+        <title>Inicio</title>
       </Helmet>
 
       <Container maxWidth="xl">
         <Typography variant="h4" sx={{ mb: 5 }}>
-          Hola, Bienvenido a Kingo Energy
+          ¡Hola! Bienvenido a Kingo Energy
         </Typography>
         <Card>
           <CardHeader>
@@ -100,44 +96,44 @@ export default function DashboardAppPage() {
             </Typography>
           </CardHeader>
           <CardContent sx={{ mb: 2 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-              <div style={{ flex: '1 1 30%' }}>
-                <Typography variant="h6">Dinero Generado</Typography>
-                <BarChart width={300} height={200} data={moneyGeneratedData}>
-                  <Bar dataKey="DineroGenerado" fill={getColor()} />
-                  <XAxis dataKey="name" />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '100%', maxWidth: '600px' }}>
+                <Typography variant="h6">Ingresos Generados</Typography>
+                <BarChart width={600} height={300} data={datosGenerados}>
+                  <XAxis dataKey="nombre" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
+                  <Bar dataKey="DineroGenerado">
+                    {
+                      datosGenerados.map((entrada, indice) => (
+                        <Cell key={`celda-${indice}`} fill={obtenerColor(indice)} />
+                      ))
+                    }
+                  </Bar>
                 </BarChart>
               </div>
-              <div style={{ flex: '1 1 30%' }}>
-                <Typography variant="h6">Actividades</Typography>
-                <PieChart width={400} height={300}>
-                  <Pie
-                    dataKey="value"
-                    data={actividadesData}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    label
-                  >
-                    {actividadesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getColor(index)} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </div>
-              <div style={{ flex: '1 1 30%' }}>
-                <Typography variant="h6">Reportes Generados</Typography>
-                <BarChart width={300} height={200} data={reportsGeneratedData}>
-                  <Bar dataKey="ReportesGenerados" fill="rgba(54, 162, 235, 0.6)" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                </BarChart>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', margin: '1rem 0' }}>
+                <div style={{ width: 'calc(50% - 0.5rem)' }}>
+                  <Typography variant="h6">Actividades</Typography>
+                  <PieChart width={300} height={200}>
+                    <Pie
+                      dataKey="duracion"
+                      data={datosActividades}
+                      outerRadius={80}
+                      label
+                    >
+                      {datosActividades.map((entrada, indice) => (
+                        <Cell key={`celda-${indice}`} fill={obtenerColor(indice)} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </div>
+                <Typography variant="body2" sx={{ width: 'calc(50% - 0.5rem)', alignSelf: 'center' }}>
+                  Aquí puedes agregar tu párrafo descriptivo.
+                </Typography>
               </div>
             </div>
           </CardContent>
