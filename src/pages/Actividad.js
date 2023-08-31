@@ -18,6 +18,7 @@ import { handleUpdateActivityStatus } from '../sections/@dashboard/blog/api';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead } from '../sections/@dashboard/user';
 import Iconify from '../components/iconify';
+import ReportePDF from '../sections/@dashboard/blog/Reportes.pdf';
 // Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
@@ -62,6 +63,7 @@ function applySortFilter(array, comparator, query) {
 
 export default function BlogPage() {
   const [actividadData, setactividadData] = useState([]);
+  const [dataReporte, setData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');
   const [page, setPage] = useState(0);
@@ -85,9 +87,15 @@ export default function BlogPage() {
     fechaInicio: '',
     fechaFinal: ''
   });
+  const getRandomColor = () => {
+    const colors = ['blue', 'green', 'red', 'orange', 'purple', 'pink', 'teal'];
+    const randomIndex = Math.floor(Math.random() * colors.length);
+    return colors[randomIndex];
+  };  
   const fetchEvents = async () => {
     try {
       const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+      const dataReporte = response.data;
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
         title: event.nombreActividad,
@@ -97,9 +105,11 @@ export default function BlogPage() {
         start: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(), // Convertir y ajustar a la zona horaria de Guatemala
         end: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),   // Convertir y ajustar a la zona horaria de Guatemala
         cliente: event.idCliente,
+        backgroundColor: getRandomColor(),
       }));
       setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
       setactividadData(response.data);
+      setData(dataReporte);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -108,7 +118,7 @@ export default function BlogPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
         const clienteData = response.data;
 
         const actividadesFormatted = clienteData.map(actividad => ({
@@ -132,7 +142,7 @@ export default function BlogPage() {
   }, []);
   const handleActividadChange = (selectedOption) => {
     setSelectedCliente(selectedOption);
-  };  
+  };
 
   const createEvent = async () => {
     try {
@@ -162,7 +172,6 @@ export default function BlogPage() {
       toast.error('Error al crear la actividad');
     }
   };   
-
   const deleteEvent = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${id}`);
@@ -185,7 +194,30 @@ export default function BlogPage() {
         console.error('Error updating activity status:', error);
       }
     }
-  };    
+  };
+  const updateEvent = () => {
+    const eventData = {
+      title: selectedEvent.title,
+      description: selectedEvent.description,
+      entrega: moment(selectedEvent.entrega).format('YYYY-MM-DD'),
+      start: moment(selectedEvent.start).startOf('day').toISOString(),
+      end: moment(selectedEvent.end).startOf('day').toISOString(),
+      cliente: selectedCliente.value,
+    };
+    console.log("Datos:",eventData);
+    axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividadupdate/${selectedEvent.id}`, eventData)
+      .then((res) => {
+        console.log(res);
+        setSelectedEvent(null);
+        fetchEvents();
+        toast.success('Se actualizo la actividad correctamente');
+      })
+      .catch((err) => {
+        toast.error('Error al intentar actualizar mi actividad');
+        console.error(err);
+      });
+  };  
+  
   const openNewEventModal = () => {
     setNewEventModalOpen(true);
   };
@@ -195,11 +227,6 @@ export default function BlogPage() {
   const selectEvent = (event) => {
     setSelectedEvent(event);
   };
-  const customEventStyleGetter = () => ({
-      style: {
-        backgroundColor: 'blue',
-      },
-    });
   const handleRequestSort = (event, property) => {
       const isAsc = orderBy === property && order === 'asc';
       setOrder(isAsc ? 'desc' : 'asc');
@@ -266,7 +293,11 @@ export default function BlogPage() {
           endAccessor="end"
           style={{ height: 500 }}
           onSelectEvent={selectEvent}
-          eventPropGetter={customEventStyleGetter}
+          eventPropGetter={event => ({
+            style: {
+              backgroundColor: event.backgroundColor,
+            },
+          })}
         />
         <br />
         <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
@@ -364,6 +395,9 @@ export default function BlogPage() {
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
+          <div style={{ display: 'flex', justifyContent: 'left', alignItems: 'center', marginLeft: '15px', marginBottom: '20px' }}>
+            <ReportePDF dataReporte={dataReporte} />
+          </div>
         </Card>
 
         <Modal
@@ -389,7 +423,7 @@ export default function BlogPage() {
           <div>
             <TextField
               type="text"
-              label="Nombre"
+              label="Nombre de la Actividad"
               value={newEvent.nombreActividad}
               onChange={(e) => setNewEvent({ ...newEvent, nombreActividad: e.target.value })}
               fullWidth
@@ -397,7 +431,7 @@ export default function BlogPage() {
             />
             <TextField
               type="text"
-              label="Descripción"
+              label="Descripción de la Actividad"
               value={newEvent.descripcionActividad}
               onChange={(e) => setNewEvent({ ...newEvent, descripcionActividad: e.target.value })}
               fullWidth
@@ -446,6 +480,7 @@ export default function BlogPage() {
                 sx={{ marginBottom: 2 }}
               />
             </div>
+            <h6 style={{ margin: '0', marginRight: '8px' }}>Cliente</h6>
             <Select
               value={selectedCliente}
               onChange={handleActividadChange}
@@ -577,6 +612,9 @@ export default function BlogPage() {
             )}</h3>
             <Button onClick={() => deleteEvent(selectedEvent.id)}>Eliminar Evento</Button>
             <Button onClick={() => setIsEditing(!isEditing)}>Actualizar Evento</Button>
+            {isEditing && (
+              <Button onClick={() => updateEvent(selectEvent.id)}>Guardar</Button>
+            )}
           </Modal>
         )}
       </Container>

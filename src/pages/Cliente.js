@@ -92,6 +92,7 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [clientes, setClientes] = useState([]);
+  const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
   const [seleccionar, setSeleccionar] = useState(null);
@@ -132,9 +133,11 @@ export default function UserPage() {
   const handleCantidadHijosChange = (e) => {
     const inputValue = e.target.value;
     if (/^\d+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, cantidadHijos: inputValue }));
+      const numChildren = parseInt(inputValue, 10); // Agrega la base numérica 10
+      setNewEvent(prevEvent => ({ ...prevEvent, cantidadHijos: numChildren }));
+      setChildrenAges(Array(numChildren).fill(''));
     }
-  };  
+  };
   // onChange para Editar Clientes
   const handleFieldChange = (fieldName, value) => {
     setSeleccionar(prevSeleccionar => ({
@@ -157,7 +160,7 @@ export default function UserPage() {
   const createEvent = async () => {
     try {
       const localStart = moment(newEvent.fechaNacimiento).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
-      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', {
+      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', {
         ...newEvent,
         fechaNacimiento: localStart,
       });
@@ -171,6 +174,13 @@ export default function UserPage() {
         trabajando: '',
         cantidadHijos: '',
       });
+      // Insertar edades de hijos solo si hay hijos
+      if (newEvent.cantidadHijos > 0) {
+        const clientId = response.data.idCliente; // Obtener el ID del cliente creado
+        const childrenData = childrenAges.map((edad, index) => ({ idHijo: index + 1, idCliente: clientId, edad })); // Asignar un idHijo basado en el índice
+        await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/hijo', { childrenData }); // Enviar un objeto con la propiedad childrenData
+      }
+      setChildrenAges([]);
       // Actualizar la lista de clientes después de crear un nuevo evento
       fetchClientes(setClientes);
       // Mostrar notificación de éxito
@@ -209,15 +219,13 @@ export default function UserPage() {
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
-  const handleSelectAllClick = (event) => {
+  const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const newSelecteds = clientes.map((n) => n.nameClient);
-      setSelected(newSelecteds);
-      return;
+      setSelected(clientes.map((cliente) => cliente.idCliente));
+    } else {
+      setSelected([]);
     }
-    setSelected([]);
   };
-
   const handleClick = (event, name) => {
     const selectedIndex = selected.indexOf(name);
     let newSelected = [];
@@ -258,6 +266,11 @@ export default function UserPage() {
     setSeleccionar(null);
     setAbrirModal(false);
   };
+  const handleChildAgeChange = (e, index) => {
+    const newChildrenAges = [...childrenAges];
+    newChildrenAges[index] = e.target.value;
+    setChildrenAges(newChildrenAges);
+  };  
 
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
   const filteredUsers = applySortFilter(clientes, getComparator(order, orderBy), filterName);
@@ -387,6 +400,23 @@ export default function UserPage() {
               sx={{ marginBottom: 2 }}
             />
           </div>
+          {newEvent.cantidadHijos > 0 && (
+            <div>
+              {[...Array(newEvent.cantidadHijos)].map((_, index) => (
+                <div key={index}>
+                  <TextField
+                    type="number"
+                    label={`Edad del Hijo ${index + 1}`}
+                    value={childrenAges[index] || ''}
+                    onChange={(e) => handleChildAgeChange(e, index)}
+                    fullWidth
+                    // ...
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+            <br />
           {/* Botones */}
           <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
             Nuevo Cliente
@@ -408,7 +438,7 @@ export default function UserPage() {
                   rowCount={clientes.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
-                  onSelectAllClick={handleSelectAllClick}
+                  onSelectAllClick={handleSelectAll}
                   showCheckbox
                 />
                 <TableBody>
