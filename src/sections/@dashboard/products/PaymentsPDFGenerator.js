@@ -30,7 +30,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
       filteredPayments = filteredPayments.filter((pago) => pago.tipoPago === 'efectivo');
     }
 
-    const startDate = parseISO(`${fechaInicio}T00:00:00Z`); // Parsea la fecha a un objeto Date
+    const startDate = parseISO(`${fechaInicio}T00:00:00.000-06:00`);  // Parsea la fecha a un objeto Date
     const endDate = parseISO(`${fechaFinal}T23:59:59Z`); // Parsea la fecha a un objeto Date
     const dateRangeText = `Desde ${format(startDate, 'dd/MM/yyyy')} hasta ${format(endDate, 'dd/MM/yyyy')}`;
     const monthRangeText = generateDateRangeText(startDate, endDate);
@@ -127,6 +127,9 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
               onChange={(e) => setNewEvent({ ...newEvent, fechaInicio: e.target.value })}
               fullWidth
               sx={{ marginBottom: 2 }}
+              InputLabelProps={{
+                shrink: true, // Mantiene la etiqueta visible incluso después de seleccionar la fecha
+              }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>

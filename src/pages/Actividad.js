@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, Tooltip } from '@mui/material';
+import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { sentenceCase } from 'change-case';
 import Select from 'react-select';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Modal from 'react-modal';
 import Label from '../components/label';
@@ -19,6 +21,7 @@ import Iconify from '../components/iconify';
 // Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
+
 const TABLE_HEAD = [
   { id: 'idActividad', label: 'N°', alignRight: false },
   { id: 'nombreActividad', label: 'Nombre', alignRight: false },
@@ -29,7 +32,6 @@ const TABLE_HEAD = [
   { id: 'fechaFinal', label: 'Finaliza', alignRight: false },
   { id: 'idCliente', label: 'Cliente', alignRight: false },
   { id: 'idPago', label: 'Pago', alignRight: false },
-  { id: 'idReporte', label: 'Reporte', alignRight: false },
 ];
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -40,13 +42,11 @@ function descendingComparator(a, b, orderBy) {
   }
   return 0;
 }
-
 function getComparator(order, orderBy) {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
-
 function applySortFilter(array, comparator, query) {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
@@ -62,7 +62,6 @@ function applySortFilter(array, comparator, query) {
 
 export default function BlogPage() {
   const [actividadData, setactividadData] = useState([]);
-  const [selectedPago, setSelectedPago] = useState(null);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');
   const [page, setPage] = useState(0);
@@ -70,11 +69,7 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const [nombreCliente, setNombreCliente] = useState('');
-  const [clientesMap, setClientesMap] = useState(new Map());
-  const [hoveredClientId, setHoveredClientId] = useState(null);
   const [cliente, setCliente] = useState('');
-  const [actividades, setActividades] = useState([]);
   const [selectedCliente, setSelectedCliente] = useState('');
   Modal.setAppElement('#root'); // Agrega esta línea
   const localizer = momentLocalizer(moment);
@@ -99,52 +94,21 @@ export default function BlogPage() {
         description: event.descripcionActividad,
         entrega: event.fechaEntrega,
         estado: event.estadoActividad,
-        start: moment(event.fechaInicio).toDate(),
-        end: moment(event.fechaFinal).toDate(),
+        start: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(), // Convertir y ajustar a la zona horaria de Guatemala
+        end: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),   // Convertir y ajustar a la zona horaria de Guatemala
         cliente: event.idCliente,
       }));
       setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
+      setactividadData(response.data);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };  
-  const fetchData = async () => {
-    try {
-      // Obtener los datos de actividades
-      const actividadesResponse = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
-      const actividadesData = actividadesResponse.data;
-
-      // Obtener los nombres de los clientes y almacenarlos en un mapa para acceso rápido
-      const idClientes = actividadesData.map(row => row.idCliente);
-      const newClientesMap = new Map(); // Nuevo mapa para almacenar los nombres de los clientes
-
-      // Realizar las llamadas a la API para obtener los nombres de los clientes
-      await Promise.all(idClientes.map(async id => {
-        try {
-          const clienteResponse = await axios.get(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${id}`);
-          newClientesMap.set(id, clienteResponse.data.nameClient);
-        } catch (error) {
-          console.error('Error obteniendo el nombre del cliente:', error);
-        }
-      }));
-
-      setClientesMap(newClientesMap); // Actualizar el estado de clientesMap
-
-      // Actualizar los datos de actividades con los nombres de los clientes
-      const actividadesConNombres = actividadesData.map(row => ({
-        ...row,
-        nombreCliente: newClientesMap.get(row.idCliente)
-      }));
-      setactividadData(actividadesConNombres);
-    } catch (error) {
-      console.error('Error al obtener los datos:', error);
-    }
-  } 
 
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
+        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
         const clienteData = response.data;
 
         const actividadesFormatted = clienteData.map(actividad => ({
@@ -162,15 +126,7 @@ export default function BlogPage() {
         console.error('Error al obtener las actividades:', error);
       }
     }
-    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades')
-      .then(response => {
-        setactividadData(response.data);
-        setSelectedPago(response.data.find(pago => pago.idActividad === 1));
-      })
-      .catch(error => {
-        console.error('Error al obtener los datos de los clientes:', error);
-      });
-    fetchData();
+
     getActividades();
     fetchEvents();
   }, []);
@@ -182,14 +138,14 @@ export default function BlogPage() {
     try {
       const formattedEvent = {
         ...newEvent,
-        fechaEntrega: moment(newEvent.fechaEntrega).startOf('day').toISOString(),
-        fechaInicio: moment(newEvent.fechaInicio).startOf('day').toISOString(),
-        fechaFinal: moment(newEvent.fechaFinal).startOf('day').toISOString(),
+        fechaEntrega: moment(newEvent.fechaEntrega).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
+        fechaInicio: moment(newEvent.fechaInicio).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
+        fechaFinal: moment(newEvent.fechaFinal).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
         idCliente: selectedCliente.value // Usar el valor seleccionado del cliente
       };
   
       await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades', formattedEvent);
-  
+      toast.success('Actividad creada con exito!');
       fetchEvents();
       closeNewEventModal();
       setNewEvent({
@@ -203,16 +159,19 @@ export default function BlogPage() {
       setSelectedCliente(null);
     } catch (error) {
       console.error('Error creating event:', error);
+      toast.error('Error al crear la actividad');
     }
-  };  
+  };   
 
   const deleteEvent = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${id}`);
       fetchEvents();
       setSelectedEvent(null);
+      toast.success('Actividad Eliminada');
     } catch (error) {
       console.error('Error deleting event:', error);
+      toast.error('Error al eliminar la Actividad');
     }
   };
   const updateActivityStatus = async () => {
@@ -227,25 +186,20 @@ export default function BlogPage() {
       }
     }
   };    
-
   const openNewEventModal = () => {
     setNewEventModalOpen(true);
   };
-
   const closeNewEventModal = () => {
     setNewEventModalOpen(false);
   };
-
   const selectEvent = (event) => {
     setSelectedEvent(event);
   };
-
-  const customEventStyleGetter = (event) => ({
+  const customEventStyleGetter = () => ({
       style: {
         backgroundColor: 'blue',
       },
     });
-
   const handleRequestSort = (event, property) => {
       const isAsc = orderBy === property && order === 'asc';
       setOrder(isAsc ? 'desc' : 'asc');
@@ -274,16 +228,13 @@ export default function BlogPage() {
     }
     setSelected(newSelected);
   };
-  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
   const handleChangeRowsPerPage = (event) => {
     setPage(0);
     setRowsPerPage(parseInt(event.target.value, 10));
   };
-  
   const handleFilterByName = (event) => {
     setPage(0);
     setFilterName(event.target.value);
@@ -318,10 +269,10 @@ export default function BlogPage() {
           eventPropGetter={customEventStyleGetter}
         />
         <br />
+        <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
+          Listado de Actividades con Pago
+        </Typography>
         <Card>
-          <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
-            Listado de Actividades con Pago
-          </Typography>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={updateActivityStatus} selected={selected}  />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -349,9 +300,8 @@ export default function BlogPage() {
                       estadoActividad,
                       fechaInicio,
                       fechaFinal,
-                      idCliente,
+                      nameClient,
                       idPago,
-                      idReporte,
                     } = row;
                     const selectedUser = selected.indexOf(idActividad) !== -1;
                     return (
@@ -372,21 +322,8 @@ export default function BlogPage() {
                         </TableCell>
                         <TableCell align="left">{moment.utc(fechaInicio).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{moment.utc(fechaFinal).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
-                        <TableCell align="left">
-                          <Tooltip
-                            title={hoveredClientId === idCliente ? clientesMap.get(idCliente) : ''}
-                            placement="top"
-                          >
-                            <span
-                              onMouseEnter={() => setHoveredClientId(idCliente)}
-                              onMouseLeave={() => setHoveredClientId(null)}
-                            >
-                              {hoveredClientId === idCliente ? clientesMap.get(idCliente) : idCliente}
-                            </span>
-                          </Tooltip>
-                        </TableCell>
+                        <TableCell align="left">{nameClient}</TableCell>
                         <TableCell align="left">{idPago}</TableCell>
-                        <TableCell align="left">{idReporte}</TableCell>
                       </TableRow>
                     );
                   })}
