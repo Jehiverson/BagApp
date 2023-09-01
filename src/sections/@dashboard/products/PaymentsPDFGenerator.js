@@ -118,7 +118,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
       </Button>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
-        <Paper sx={{ p: 2, width: 400 }}>
+        <Paper sx={{ p: 2, width: 400, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
             <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
             <TextField

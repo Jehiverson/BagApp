@@ -14,13 +14,12 @@ const ReportePDF = ({ dataReporte }) => {
   });
 
   const getTitle = () => 'BANCO DE ALIMENTOS DE GUATEMALA - BASE DE DATOS DE BENEFICIARIOS';
-  const getParrafo = () => {
-    const parrafo = [
-      'Nombre de la Organización:________________________ |            |     |',
-      'Lugar de entrega:______________manz 21 lote 8 sec, 2 Tierra Nueva 1',
-      'Responsabilidad del Proyecto:___________'
-    ];
-    return parrafo.join(' ');
+  const getTitulo = () => {
+    const nombreOrganizacion = 'Nombre de la Organización:____________';
+    const lugarEntrega = 'Lugar de entrega:________________manz 21 lote 8 sec, 2 Tierra Nueva 1';
+    const responsabilidadProyecto = 'Responsabilidad del Proyecto:_________';
+  
+    return `${nombreOrganizacion}          Fecha entrega:          ${lugarEntrega}          ${responsabilidadProyecto}`;
   };
 
   const handleGeneratePDF = () => {
@@ -41,61 +40,71 @@ const ReportePDF = ({ dataReporte }) => {
       (actividad) => parseISO(actividad.fechaEntrega) >= startDate && parseISO(actividad.fechaEntrega) <= endDate
     );
 
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape');
 
     // Agregar imagen como marca de agua en la esquina superior izquierda
-    const watermarkWidth = 80; // Ancho de la marca de agua en el PDF
+    const watermarkWidth = 100; // Ancho de la marca de agua en el PDF
     const watermarkHeight = 40; // Altura de la marca de agua en el PDF
     const watermarkX = 10; // Coordenada X de la marca de agua
     const watermarkY = 10; // Coordenada Y de la marca de agua
     doc.addImage(logo, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight, null, 'FAST');
 
-    // Agregar título centrado y en negrita
+    // Agregar título centrado y en negrita (title)
     const title = getTitle();
-    const titleFontSize = 14; // Tamaño de fuente reducido
+    const titleFontSize = 12;
     const titleWidth = doc.getStringUnitWidth(title) * titleFontSize / doc.internal.scaleFactor;
     const titleX = (doc.internal.pageSize.width - titleWidth) / 2;
-    const titleY = watermarkY + watermarkHeight + 10;
+    const titleY = watermarkY + watermarkHeight + 10; // Ajusta la posición vertical según tus necesidades
     doc.setFontSize(titleFontSize);
     doc.setTextColor(0);
     doc.setFont('helvetica', 'bold');
     doc.text(title, titleX, titleY);
 
-    // Dibujar un rectángulo alrededor del párrafo
-    const parrafo = getParrafo();
-    const parrafoFontSize = 6;
-    const parrafoWidth = doc.getStringUnitWidth(parrafo) * parrafoFontSize / doc.internal.scaleFactor;
-    const parrafoHeight = 10; // Altura del rectángulo
-    const parrafoX = watermarkX; // Misma coordenada X que la marca de agua
-    const parrafoY = titleY + titleWidth + 5; // Ajustar posición vertical (movido hacia arriba)
-    doc.setDrawColor(0); // Color del borde del rectángulo
-    doc.rect(parrafoX, parrafoY, parrafoWidth, parrafoHeight); // Dibujar el rectángulo
-    doc.setFontSize(parrafoFontSize);
+    // Agregar título centrado y en negrita (getTitulo)
+    const titulo = getTitulo();
+    const tituloFontSize = 8;
+    const tituloWidth = doc.getStringUnitWidth(titulo) * tituloFontSize / doc.internal.scaleFactor;
+    const tituloX = (doc.internal.pageSize.width - tituloWidth) / 2;
+    const tituloY = titleY + 10; // Ajusta la posición vertical según tus necesidades
+    doc.setFontSize(tituloFontSize);
     doc.setTextColor(0);
     doc.setFont('helvetica', 'normal');
-    doc.text(parrafo, parrafoX + 2, parrafoY + 8);
+    doc.text(titulo, tituloX, tituloY);
 
-    const tableData = filteredActivities.map((actividad) => [
-      actividad.idActividad,
-      actividad.nombreActividad,
-      actividad.descripcionActividad,
-      format(new Date(actividad.fechaEntrega), 'yyyy-MM-dd', { timeZone: 'America/Guatemala' }),
-      actividad.estadoActividad,
-      format(new Date(actividad.fechaInicio), 'yyyy-MM-dd', { timeZone: 'America/Guatemala' }),
-      format(new Date(actividad.fechaFinal), 'yyyy-MM-dd', { timeZone: 'America/Guatemala' }),
-      actividad.nameClient,
-      actividad.idPago
-    ]);
+    const currentDate = new Date(); // Obtener la fecha actual
+    const tableData = filteredActivities.map((actividad) => {
+      // Calcular la edad a partir de la fecha de nacimiento
+      const birthDate = new Date(actividad.fechaNacimiento);
+      const age = currentDate.getFullYear() - birthDate.getFullYear();
+    
+      // Formatear la edad como número
+      const formattedAge = Number.isNaN(age) ? '' : age.toString();
+    
+      return [
+        actividad.idActividad,
+        (actividad.idCliente ? `${actividad.nameClient} ${actividad.apellidoClient}` : `${actividad.nameClient} ${actividad.apellidoClient}`),
+        actividad.dpi,
+        actividad.telefono,
+        actividad.genero,
+        formattedAge, // Aquí mostramos la edad en lugar de la fecha de nacimiento
+        actividad.estadoCivil,
+        actividad.ocupacion,
+        actividad.trabajando
+      ];
+    });     
 
     doc.autoTable({
-      head: [['N°', 'Nombre', 'Descripcion', 'Entrega', 'Estado', 'Inicio', 'Finaliza', 'Cliente', 'Pago']],
+      head: [['Código de la familia', 'Nombre completo del representante de la familia', 'Número de DPI', 'Teléfono', 'Género (F, M)', 'Edad (años)', 'Estado civil (S, C, U, D, otro)', 'Ocupación', 'Trabaja actualmente (Si, No)']],
       body: tableData,
-      startY: 80,
+      startY: tituloY + 5,
       theme: 'grid', // Usar el estilo de tabla grid
       styles: {
         font: 'helvetica', // Cambiar a fuente helvetica
         fontSize: 10,
-        textColor: [0, 0, 0],
+        cellPadding: 5, // Espacio interno de la celda
+        halign: 'center', // Alineación horizontal de contenido
+        lineColor: [0, 0, 0], // Color de los bordes de las celdas (negro)
+        lineWidth: 0.2, // Ancho de los bordes de las celdas (ajusta según tus preferencias)
       },
       headStyles: {
         fontSize: 10,
@@ -104,15 +113,16 @@ const ReportePDF = ({ dataReporte }) => {
         halign: 'center', // Alineación horizontal del texto en el encabezado
         valign: 'middle', // Alineación vertical del texto en el encabezado
       },
-    });
-
-    // Agregar Firma y Empresa
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-
-    // Ajustar coordenadas para que la firma y la empresa aparezcan en la parte inferior
-    doc.text('Firma: ______________________', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 60, 'center');
-    doc.text('Empresa Kingo Energy', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 50, 'center');
+      didDrawCell: (data) => {
+        if (data.column.index === 0) {
+          // Comprueba si es la primera columna (Código de la familia)
+          data.cell.styles.fillColor = [255, 255, 0]; // Cambia el fondo de la celda a amarillo
+        }
+      },
+      tableLineColor: [0, 0, 0], // Color de los bordes de la tabla (negro)
+      tableLineWidth: 0.2, // Ancho de los bordes de la tabla (ajusta según tus preferencias)
+      margin: { top: 80 }, // Ajusta el margen superior para evitar superponerse con la tabla
+    });    
 
     doc.save('reporte_actividades.pdf');
     setModalOpen(false);

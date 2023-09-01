@@ -92,6 +92,7 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [clientes, setClientes] = useState([]);
+  const targetClientId = 75893;
   const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
@@ -101,8 +102,11 @@ export default function UserPage() {
     apellidoClient: '',
     fechaNacimiento: '',
     dpi: '',
+    telefono: '',
+    genero: '',
     estadoCivil: '',
-    trabajando: '',
+    trabajando: 'No',
+    ocupacion: '',
     cantidadHijos: ''
   });
   // onChange para Insertar Clientes
@@ -130,6 +134,21 @@ export default function UserPage() {
       setNewEvent(prevEvent => ({ ...prevEvent, dpi: inputValue }));
     }
   };
+  const handleTelefonoChange = (e) => {
+    const inputValue = e.target.value;
+    if (/^\d+$/.test(inputValue) || inputValue === '') {
+      setNewEvent(prevEvent => ({ ...prevEvent, telefono: inputValue }));
+    }
+  };
+  const handleGeneroChange = (event) => {
+    setNewEvent(prevEvent => ({ ...prevEvent, genero: event.target.value }));
+  };
+  const handleOcupacionChange = (e) => {
+    const inputValue = e.target.value;
+    if (/^[A-Za-z\s]+$/.test(inputValue) || inputValue === '') {
+      setNewEvent(prevEvent => ({ ...prevEvent, ocupacion: inputValue }));
+    }
+  };
   const handleCantidadHijosChange = (e) => {
     const inputValue = e.target.value;
     if (/^\d+$/.test(inputValue) || inputValue === '') {
@@ -145,7 +164,6 @@ export default function UserPage() {
       [fieldName]: value,
     }));
   };
-
   // Actualizar el estado civil
   const handleEstadoCivilChangeSelec = (event) => {
     const newStateCivil = event.target.value;
@@ -157,6 +175,13 @@ export default function UserPage() {
   useEffect(() => {
     fetchClientes(setClientes);
   }, []);
+  // Función para buscar el cliente con el ID deseado
+  const findClientById = (clientId) => {
+    return clientes.find((cliente) => cliente.idCliente === clientId);
+  };
+  // Obtén el cliente con el ID deseado
+  const targetClient = findClientById(targetClientId);
+
   const createEvent = async () => {
     try {
       const localStart = moment(newEvent.fechaNacimiento).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
@@ -170,8 +195,11 @@ export default function UserPage() {
         apellidoClient: '',
         fechaNacimiento: '',
         dpi: '',
+        telefono: '',
+        genero:  '',
         estadoCivil: '',
         trabajando: '',
+        ocupacion: '',
         cantidadHijos: '',
       });
       // Insertar edades de hijos solo si hay hijos
@@ -300,6 +328,12 @@ export default function UserPage() {
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
             },
             content: {
+              // Resto de tus estilos
+              width: '60%', // Reduce el ancho del modal al 60% del ancho de la ventana
+              maxHeight: '80%', // Limita la altura máxima del modal al 80% del alto de la ventana
+              overflow: 'auto', // Agrega un scrollbar si es necesario
+
+              // El resto de tus estilos se mantiene igual
               top: '50%', // Center the modal vertically
               left: '50%',
               right: 'auto',
@@ -307,15 +341,12 @@ export default function UserPage() {
               transform: 'translate(-50%, -50%)',
               borderRadius: '8px',
               padding: '20px',
-              width: '80%',
               maxWidth: '800px',
-              maxHeight: '90%',
               margin: 'auto',
-              overflow: 'auto',
-              marginTop: '35px', // Adjust the margin from the top
-              marginBottom: '20px', // Adjust the margin from the bottom
-              marginLeft: '20px', // Adjust the margin from the left
-              marginRight: '20px', // Adjust the margin from the right
+              marginTop: '35px',
+              marginBottom: '20px',
+              marginLeft: '20px',
+              marginRight: '20px',
             },
           }}
           >
@@ -362,6 +393,31 @@ export default function UserPage() {
               sx={{ marginBottom: 2 }}
             />
             <TextField
+              type="number"
+              label="Telefono"
+              value={newEvent.telefono}
+              onChange={handleTelefonoChange}
+              fullWidth
+              error={newEvent.telefono !== '' && !/^\d+$/.test(newEvent.telefono)}
+              helperText={newEvent.telefono !== '' && !/^\d+$/.test(newEvent.telefono) ? 'Solo se permiten números' : ''}
+              sx={{ marginBottom: 2 }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+              <h5 style={{ margin: '0', marginRight: '16px' }}>Genero:</h5>
+              <RadioGroup
+                aria-label="Genero"
+                name="genero"
+                value={newEvent.genero}
+                onChange={handleGeneroChange}
+                row
+                sx={{ marginBottom: 2 }}
+              >
+                <FormControlLabel value="F" control={<Radio />} label="F" />
+                <FormControlLabel value="M" control={<Radio />} label="M" />
+                <FormControlLabel value="otro" control={<Radio />} label="Otro" />
+              </RadioGroup>
+            </div>
+            <TextField
               select
               label="Estado Civil"
               value={newEvent.estadoCivil}
@@ -389,6 +445,18 @@ export default function UserPage() {
                 <FormControlLabel value="No" control={<Radio />} label="No" />
               </RadioGroup>
             </div>
+            {newEvent.trabajando === 'Si' && (
+              <TextField
+                type="text"
+                label="Ocupacion"
+                value={newEvent.ocupacion}
+                onChange={handleOcupacionChange}
+                fullWidth
+                error={newEvent.ocupacion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.ocupacion)}
+                helperText={newEvent.ocupacion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.ocupacion) ? 'No se permiten números' : ''}
+                sx={{ marginBottom: 2 }}
+              />
+            )}
             <TextField
               type="number"
               label="Cantidad de Hijos"
@@ -425,7 +493,6 @@ export default function UserPage() {
             Cancelar
           </Button>
         </ReactModal>
-
         <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={deleteSelected} selected={selected} />
           <Scrollbar>
@@ -627,6 +694,50 @@ export default function UserPage() {
             </Button>
           </div>
         </ReactModal>
+        <br />
+        <Typography variant="h4" gutterBottom>Cliente</Typography>
+        <div>
+          {targetClient && (
+            <Card sx={{ padding: '16px' }}>
+              <div>
+                <Typography variant="h4" gutterBottom>
+                  {targetClient.idCliente}
+                </Typography>
+                <Typography variant="body1">
+                  Nombre del Cliente: {targetClient.nameClient}
+                </Typography>
+                <Typography variant="body1">
+                  Apellido del Cliente: {targetClient.apellidoClient}
+                </Typography>
+                <Typography variant="body1">
+                  Fecha de Nacimiento: {targetClient.fechaNacimiento}
+                </Typography>
+                <Typography variant="body1">
+                  DPI: {targetClient.dpi}
+                </Typography>
+                <Typography variant="body1">
+                  Teléfono: {targetClient.telefono}
+                </Typography>
+                <Typography variant="body1">
+                  Género: {targetClient.genero}
+                </Typography>
+                <Typography variant="body1">
+                  Estado Civil: {targetClient.estadoCivil}
+                </Typography>
+                <Typography variant="body1">
+                  Trabajando: {targetClient.trabajando}
+                </Typography>
+                <Typography variant="body1">
+                  Ocupación: {targetClient.ocupacion}
+                </Typography>
+                <Typography variant="body1">
+                  Cantidad de Hijos: {targetClient.cantidadHijos}
+                </Typography>
+                {/* Agrega más líneas para mostrar otros datos del cliente */}
+              </div>
+            </Card>
+          )}
+        </div>
 
       </Container>
     </>

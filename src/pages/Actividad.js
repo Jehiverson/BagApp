@@ -232,13 +232,12 @@ export default function BlogPage() {
       setOrder(isAsc ? 'desc' : 'asc');
       setOrderBy(property);
   };
-  const handleSelectAllClick = (event) => {
+  const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const newSelecteds = actividadData.map((n) => n.nombreActividad);
-      setSelected(newSelecteds);
-      return;
+      setSelected(actividadData.map((actividadData) => actividadData.idActividad));
+    } else {
+      setSelected([]);
     }
-    setSelected([]);
   };
   const handleClick = (event, name) => {
     console.log('Clicked activity ID:', name); // Agrega este console.log
@@ -315,7 +314,7 @@ export default function BlogPage() {
                     rowCount={actividadData.length}
                     numSelected={selected.length}
                     onRequestSort={handleRequestSort}
-                    onSelectAllClick={handleSelectAllClick}
+                    onSelectAllClick={handleSelectAll}
                     showCheckbox
                   />
                 <TableBody>
