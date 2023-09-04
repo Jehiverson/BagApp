@@ -107,6 +107,7 @@ export default function UserPage() {
     estadoCivil: '',
     trabajando: 'No',
     ocupacion: '',
+    direccion: '',
     cantidadHijos: ''
   });
   // onChange para Insertar Clientes
@@ -149,6 +150,12 @@ export default function UserPage() {
       setNewEvent(prevEvent => ({ ...prevEvent, ocupacion: inputValue }));
     }
   };
+  const handleDireccionChange = (e) => {
+    const inputValue = e.target.value;
+    if (/^[A-Za-z0-9\s\W]+$/.test(inputValue) || inputValue === '') {
+      setNewEvent((prevEvent) => ({ ...prevEvent, direccion: inputValue }));
+    }
+  };  
   const handleCantidadHijosChange = (e) => {
     const inputValue = e.target.value;
     if (/^\d+$/.test(inputValue) || inputValue === '') {
@@ -200,6 +207,7 @@ export default function UserPage() {
         estadoCivil: '',
         trabajando: '',
         ocupacion: '',
+        direccion: '',
         cantidadHijos: '',
       });
       // Insertar edades de hijos solo si hay hijos
@@ -457,6 +465,16 @@ export default function UserPage() {
                 sx={{ marginBottom: 2 }}
               />
             )}
+            <TextField
+              type="text"
+              label="Direccion"
+              value={newEvent.direccion}
+              onChange={handleDireccionChange}
+              fullWidth
+              error={newEvent.direccion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.direccion)}
+              helperText={newEvent.direccion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.direccion)}
+              sx={{ marginBottom: 2 }}
+            />
             <TextField
               type="number"
               label="Cantidad de Hijos"

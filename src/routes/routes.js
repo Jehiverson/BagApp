@@ -7,7 +7,6 @@ import Page404 from '../pages/Page404';
 import Pago from '../pages/Pago';
 import Home from '../pages/Home';
 import Opciones from '../pages/Opciones';
-import RegisterPage from '../pages/RegisterPage';
 
 export default function Router() {
   const routes = useRoutes([
@@ -26,10 +25,6 @@ export default function Router() {
     {
       path: 'login',
       element: <LoginPage />,
-    },
-    {
-      path: 'register',
-      element: <RegisterPage />,
     },
     {
       path: '*',

@@ -2,15 +2,27 @@ import React, { useState } from 'react';
 import { Button, Modal, Paper, TextField, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import logo from './pdf/logo_pdf.png';
+
+/*
+function calcularEdad(fechaNacimiento, fechaHijo) {
+  const diff = fechaHijo - fechaNacimiento;
+  const edad = new Date(diff);
+  return Math.abs(edad.getUTCFullYear() - 1970);
+} */
+// Función para calcular la edad en años a partir del número de años
+function calcularEdad(edadHijo) {
+  return parseInt(edadHijo, 10);
+}
+
 
 const ReportePDF = ({ dataReporte }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
     fechaFinal: '',
-    filtroEstado: 'todos', // Opciones: 'todos', 'Completa', 'Pendiente'
+    filtroEstado: 'todos',
   });
 
   const getTitle = () => 'BANCO DE ALIMENTOS DE GUATEMALA - BASE DE DATOS DE BENEFICIARIOS';
@@ -18,114 +30,200 @@ const ReportePDF = ({ dataReporte }) => {
     const nombreOrganizacion = 'Nombre de la Organización:____________';
     const lugarEntrega = 'Lugar de entrega:________________manz 21 lote 8 sec, 2 Tierra Nueva 1';
     const responsabilidadProyecto = 'Responsabilidad del Proyecto:_________';
-  
+
     return `${nombreOrganizacion}          Fecha entrega:          ${lugarEntrega}          ${responsabilidadProyecto}`;
   };
 
   const handleGeneratePDF = () => {
-    const { fechaInicio, fechaFinal, filtroEstado } = newEvent;
+    try {
+      const { fechaInicio, fechaFinal, filtroEstado } = newEvent;
 
-    let filteredActivities = [...dataReporte];
+      let filteredActivities = [...dataReporte];
 
-    if (filtroEstado === 'Completa') {
-      filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Completa');
-    } else if (filtroEstado === 'Pendiente') {
-      filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Pendiente');
-    }
+      if (filtroEstado === 'Completa') {
+        filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Completa');
+      } else if (filtroEstado === 'Pendiente') {
+        filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Pendiente');
+      }
 
-    const startDate = parseISO(`${fechaInicio}T00:00:00.000-06:00`);
-    const endDate = parseISO(`${fechaFinal}T23:59:59Z`);
+      const startDate = parseISO(`${fechaInicio}T00:00:00.000-06:00`);
+      const endDate = parseISO(`${fechaFinal}T23:59:59Z`);
 
-    filteredActivities = filteredActivities.filter(
-      (actividad) => parseISO(actividad.fechaEntrega) >= startDate && parseISO(actividad.fechaEntrega) <= endDate
-    );
+      filteredActivities = filteredActivities.filter(
+        (actividad) => parseISO(actividad.fechaEntrega) >= startDate && parseISO(actividad.fechaEntrega) <= endDate
+      );
 
-    const doc = new jsPDF('landscape');
+      const doc = new jsPDF('landscape');
 
-    // Agregar imagen como marca de agua en la esquina superior izquierda
-    const watermarkWidth = 100; // Ancho de la marca de agua en el PDF
-    const watermarkHeight = 40; // Altura de la marca de agua en el PDF
-    const watermarkX = 10; // Coordenada X de la marca de agua
-    const watermarkY = 10; // Coordenada Y de la marca de agua
-    doc.addImage(logo, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight, null, 'FAST');
+      // Add watermark
+      const watermarkWidth = 100;
+      const watermarkHeight = 40;
+      const watermarkX = 10;
+      const watermarkY = 10;
+      doc.addImage(logo, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight, null, 'FAST');
 
-    // Agregar título centrado y en negrita (title)
-    const title = getTitle();
-    const titleFontSize = 12;
-    const titleWidth = doc.getStringUnitWidth(title) * titleFontSize / doc.internal.scaleFactor;
-    const titleX = (doc.internal.pageSize.width - titleWidth) / 2;
-    const titleY = watermarkY + watermarkHeight + 10; // Ajusta la posición vertical según tus necesidades
-    doc.setFontSize(titleFontSize);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(title, titleX, titleY);
+      // Calculate the center position for titles
+      const centerX = doc.internal.pageSize.width / 2;
 
-    // Agregar título centrado y en negrita (getTitulo)
-    const titulo = getTitulo();
-    const tituloFontSize = 8;
-    const tituloWidth = doc.getStringUnitWidth(titulo) * tituloFontSize / doc.internal.scaleFactor;
-    const tituloX = (doc.internal.pageSize.width - tituloWidth) / 2;
-    const tituloY = titleY + 10; // Ajusta la posición vertical según tus necesidades
-    doc.setFontSize(tituloFontSize);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'normal');
-    doc.text(titulo, tituloX, tituloY);
+      // Add title centered and in bold
+      const title = getTitle();
+      const titleFontSize = 12;
+      doc.setFontSize(titleFontSize);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'bold');
+      doc.text(centerX, watermarkY + watermarkHeight + 5, title, 'center');
 
-    const currentDate = new Date(); // Obtener la fecha actual
-    const tableData = filteredActivities.map((actividad) => {
-      // Calcular la edad a partir de la fecha de nacimiento
-      const birthDate = new Date(actividad.fechaNacimiento);
-      const age = currentDate.getFullYear() - birthDate.getFullYear();
-    
-      // Formatear la edad como número
-      const formattedAge = Number.isNaN(age) ? '' : age.toString();
-    
-      return [
-        actividad.idActividad,
-        (actividad.idCliente ? `${actividad.nameClient} ${actividad.apellidoClient}` : `${actividad.nameClient} ${actividad.apellidoClient}`),
-        actividad.dpi,
-        actividad.telefono,
-        actividad.genero,
-        formattedAge, // Aquí mostramos la edad en lugar de la fecha de nacimiento
-        actividad.estadoCivil,
-        actividad.ocupacion,
-        actividad.trabajando
-      ];
-    });     
+      // Add subtitle centered
+      const titulo = getTitulo();
+      const tituloFontSize = 8;
+      doc.setFontSize(tituloFontSize);
+      doc.setFont('helvetica', 'normal');
+      doc.text(centerX, watermarkY + watermarkHeight + 15, titulo, 'center');
 
-    doc.autoTable({
-      head: [['Código de la familia', 'Nombre completo del representante de la familia', 'Número de DPI', 'Teléfono', 'Género (F, M)', 'Edad (años)', 'Estado civil (S, C, U, D, otro)', 'Ocupación', 'Trabaja actualmente (Si, No)']],
-      body: tableData,
-      startY: tituloY + 5,
-      theme: 'grid', // Usar el estilo de tabla grid
-      styles: {
-        font: 'helvetica', // Cambiar a fuente helvetica
-        fontSize: 10,
-        cellPadding: 5, // Espacio interno de la celda
-        halign: 'center', // Alineación horizontal de contenido
-        lineColor: [0, 0, 0], // Color de los bordes de las celdas (negro)
-        lineWidth: 0.2, // Ancho de los bordes de las celdas (ajusta según tus preferencias)
-      },
-      headStyles: {
-        fontSize: 10,
-        fillColor: [51, 153, 102], // Color de fondo del encabezado (verde)
-        textColor: [255, 255, 255], // Color de texto del encabezado (blanco)
-        halign: 'center', // Alineación horizontal del texto en el encabezado
-        valign: 'middle', // Alineación vertical del texto en el encabezado
-      },
-      didDrawCell: (data) => {
-        if (data.column.index === 0) {
-          // Comprueba si es la primera columna (Código de la familia)
-          data.cell.styles.fillColor = [255, 255, 0]; // Cambia el fondo de la celda a amarillo
+      const currentDate = new Date();
+
+      const tableHeaders = [
+        [
+          { content: 'CODIGO', rowSpan: 3 },
+          { content: 'Nombre completo del representante de la familia\n(Nombres, Apellido)', rowSpan: 3 },
+          { content: 'Numero de DPI', rowSpan: 3 },
+          { content: 'Telefono', rowSpan: 3 },
+          { content: 'Genero\n(F,M)', rowSpan: 3 },
+          { content: 'Edad\n(años)', rowSpan: 3 },
+          { content: 'Estado Civil\n(S,C,U,D,otro)', rowSpan: 3 },
+          { content: 'Ocupacion', rowSpan: 3 },
+          { content: 'Trabaja actualmente\n(Si,No)', rowSpan: 3 },
+          { content: 'Numero de Beneficiarios', colSpan: 10 },
+          { content: 'TOTAL MIEMBROS DE LA FAMILIA', rowSpan: 3 },
+          { content: 'Direccion', rowSpan: 3 },
+        ],
+        [
+          { content: '0-2 años', colSpan: 2 },
+          { content: '3 a 5 años', colSpan: 2 },
+          { content: '6 a 18 años', colSpan: 2 },
+          { content: '19 a 49 años', colSpan: 2 },
+          { content: 'Mayor 50 años', colSpan: 2 },
+          '',
+          '',
+          '',
+          '',
+          '',
+        ],
+        [
+          'H',
+          'M',
+          'H',
+          'M',
+          'H',
+          'M',
+          'H',
+          'M',
+          'H',
+          'M',
+          '',
+          '',
+          '',
+          '',
+        ],
+      ]; 
+      const tableData = filteredActivities.map((actividad) => {
+        const birthDate = new Date(actividad.fechaNacimiento);
+        const age = currentDate.getFullYear() - birthDate.getFullYear();
+        const formattedAge = Number.isNaN(age) ? '' : age.toString();
+        const genero = actividad.genero;
+
+        // Inicializa contadores para cada categoría
+        const categorias = {
+          '0-2 años Hombre': 0,
+          '0-2 años Mujer': 0,
+          '3-5 años Hombre': 0,
+          '3-5 años Mujer': 0,
+          '6-18 años Hombre': 0,
+          '6-18 años Mujer': 0,
+          '19-49 años Hombre': 0,
+          '19-49 años Mujer': 0,
+          '50+ años Hombre': 0,
+          '50+ años Mujer': 0,
+        };
+        // Verificar si actividad.hijos existe y es un array
+        if (actividad.hijo && Array.isArray(actividad.hijo)) {
+          actividad.hijo.forEach((hijo) => {
+            const edadHijo = parseInt(hijo.edad, 10); // Convierte la edad del hijo a número
+            const generoHijo = hijo.genero;
+
+            if (edadHijo >= 0 && edadHijo <= 2) {
+              categorias[`${edadHijo}-2 años ${generoHijo}`] = (categorias[`${edadHijo}-2 años ${generoHijo}`] || 0) + 1;
+            } else if (edadHijo >= 3 && edadHijo <= 5) {
+              categorias[`3-5 años ${generoHijo}`] = (categorias[`3-5 años ${generoHijo}`] || 0) + 1;
+            } else if (edadHijo >= 6 && edadHijo <= 18) {
+              categorias[`6-18 años ${generoHijo}`] = (categorias[`6-18 años ${generoHijo}`] || 0) + 1;
+            } else if (edadHijo >= 19 && edadHijo <= 49) {
+              categorias[`19-49 años ${generoHijo}`] = (categorias[`19-49 años ${generoHijo}`] || 0) + 1;
+            } else {
+              categorias[`50+ años ${generoHijo}`] = (categorias[`50+ años ${generoHijo}`] || 0) + 1;
+            }
+          });
         }
-      },
-      tableLineColor: [0, 0, 0], // Color de los bordes de la tabla (negro)
-      tableLineWidth: 0.2, // Ancho de los bordes de la tabla (ajusta según tus preferencias)
-      margin: { top: 80 }, // Ajusta el margen superior para evitar superponerse con la tabla
-    });    
+      
+        return [
+          actividad.idActividad,
+          (actividad.idCliente ? `${actividad.nameClient} ${actividad.apellidoClient}` : `${actividad.nameClient} ${actividad.apellidoClient}`),
+          actividad.dpi,
+          actividad.telefono,
+          actividad.genero,
+          formattedAge,
+          actividad.estadoCivil,
+          actividad.ocupacion,
+          actividad.trabajando,
+          categorias['0-2 años Hombre'], // 0 a 2 años Hombre
+          categorias['0-2 años Mujer'],  // 0 a 2 años Mujer
+          categorias['3-5 años Hombre'], // 3 a 5 años Hombre
+          categorias['3-5 años Mujer'],  // 3 a 5 años Mujer
+          categorias['6-18 años Hombre'], // 6 a 18 años Hombre
+          categorias['6-18 años Mujer'],  // 6 a 18 años Mujer
+          categorias['19-49 años Hombre'], // 19 a 49 años Hombre
+          categorias['19-49 años Mujer'],  // 19 a 49 años Mujer
+          categorias['50+ años Hombre'],   // 50+ años Hombre
+          categorias['50+ años Mujer'],    // 50+ años Mujer
+          actividad.cantidadHijos, // Miembros
+          actividad.direccion
+        ];
+      });
 
-    doc.save('reporte_actividades.pdf');
-    setModalOpen(false);
+      const tableOptions = {
+        margin: { top: watermarkY + watermarkHeight + 30 },
+        styles: {
+          fontSize: 6, // Cambiar el tamaño de fuente a 6
+          cellPadding: 2,
+        },
+        theme: 'grid',
+        headStyles: {
+          fontSize: 6, // Cambiar el tamaño de fuente a 6
+          fillColor: [51, 153, 102],
+          textColor: [255, 255, 255],
+          halign: 'center',
+          valign: 'middle',
+        },
+      };
+
+      doc.autoTable({
+        head: [tableHeaders[0], tableHeaders[1], tableHeaders[2]], // Encabezado separado en filas individuales
+        body: tableData,
+        ...tableOptions,
+      });
+
+      // Handle pagination if needed (you may adjust this logic)
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i += 1) {
+        doc.setPage(i);
+        doc.text(centerX, watermarkY + watermarkHeight + 10, `Página ${i} de ${totalPages}`, 'center');
+      }
+
+      doc.save('reporte_actividades.pdf');
+      setModalOpen(false);
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+    }
   };
 
   return (

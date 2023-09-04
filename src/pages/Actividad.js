@@ -190,8 +190,10 @@ export default function BlogPage() {
       try {
         await handleUpdateActivityStatus(selectedId, { estadoActividad: 'Completa' }, actividadData, setactividadData);
         setSelected([]);
+        toast.success("Actividad Entregadas");
       } catch (error) {
         console.error('Error updating activity status:', error);
+        toast.error("Error al actualizar Actividad");
       }
     }
   };
