@@ -63,7 +63,6 @@ function applySortFilter(array, comparator, query) {
 
 export default function BlogPage() {
   const [actividadData, setactividadData] = useState([]);
-  const [dataReporte, setData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');
   const [page, setPage] = useState(0);
@@ -72,6 +71,8 @@ export default function BlogPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [cliente, setCliente] = useState('');
+  const [dataReporte, setData] = useState([]);
+  const [hijo, setHijo] = useState('');
   const [selectedCliente, setSelectedCliente] = useState('');
   Modal.setAppElement('#root'); // Agrega esta línea
   const localizer = momentLocalizer(moment);
@@ -114,6 +115,16 @@ export default function BlogPage() {
       console.error('Error fetching events:', error);
     }
   };  
+  const hijosDatos = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/bagapp-5a770/us-central1/app/api/hijo");
+      const dataHijo = response.data;
+      setHijo(dataHijo);
+    } catch (error) {
+      console.error("Error al pasar los datos", error); 
+      toast.error("Error al obtener los datos");
+    }
+  }
 
   useEffect(() => {
     async function getActividades() {
@@ -136,7 +147,7 @@ export default function BlogPage() {
         console.error('Error al obtener las actividades:', error);
       }
     }
-
+    hijosDatos()
     getActividades();
     fetchEvents();
   }, []);
@@ -397,7 +408,7 @@ export default function BlogPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
           <div style={{ display: 'flex', justifyContent: 'left', alignItems: 'center', marginLeft: '15px', marginBottom: '20px' }}>
-            <ReportePDF dataReporte={dataReporte} />
+            <ReportePDF dataReporte={dataReporte} hijo={hijo} />
           </div>
         </Card>
 

@@ -5,19 +5,15 @@ import 'jspdf-autotable';
 import { parseISO } from 'date-fns';
 import logo from './pdf/logo_pdf.png';
 
-/*
-function calcularEdad(fechaNacimiento, fechaHijo) {
-  const diff = fechaHijo - fechaNacimiento;
+function calcularEdad(fechaNacimiento) {
+  const fechaNacimientoDate = new Date(fechaNacimiento);
+  const fechaActual = new Date();
+  const diff = fechaActual - fechaNacimientoDate;
   const edad = new Date(diff);
   return Math.abs(edad.getUTCFullYear() - 1970);
-} */
-// Función para calcular la edad en años a partir del número de años
-function calcularEdad(edadHijo) {
-  return parseInt(edadHijo, 10);
 }
 
-
-const ReportePDF = ({ dataReporte }) => {
+const ReportePDF = ({ dataReporte, hijo }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
@@ -55,17 +51,17 @@ const ReportePDF = ({ dataReporte }) => {
 
       const doc = new jsPDF('landscape');
 
-      // Add watermark
-      const watermarkWidth = 100;
-      const watermarkHeight = 40;
+      // Marca de agua
+      const watermarkWidth = 50;
+      const watermarkHeight = 20;
       const watermarkX = 10;
       const watermarkY = 10;
       doc.addImage(logo, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight, null, 'FAST');
 
-      // Calculate the center position for titles
+      // Calcular la posición central de los títulos
       const centerX = doc.internal.pageSize.width / 2;
 
-      // Add title centered and in bold
+      // Añadir título centrado y en negrita
       const title = getTitle();
       const titleFontSize = 12;
       doc.setFontSize(titleFontSize);
@@ -73,7 +69,7 @@ const ReportePDF = ({ dataReporte }) => {
       doc.setFont('helvetica', 'bold');
       doc.text(centerX, watermarkY + watermarkHeight + 5, title, 'center');
 
-      // Add subtitle centered
+      // Añadir subtitulo centrado
       const titulo = getTitulo();
       const tituloFontSize = 8;
       doc.setFontSize(tituloFontSize);
@@ -130,8 +126,9 @@ const ReportePDF = ({ dataReporte }) => {
         const birthDate = new Date(actividad.fechaNacimiento);
         const age = currentDate.getFullYear() - birthDate.getFullYear();
         const formattedAge = Number.isNaN(age) ? '' : age.toString();
-        const genero = actividad.genero;
 
+        const clienteId = actividad.idCliente; // Obtiene el idCliente de la actividad
+        const clienteHijos = hijo.filter((h) => h.idCliente === clienteId); // Filtra los hijos que pertenecen al mismo cliente
         // Inicializa contadores para cada categoría
         const categorias = {
           '0-2 años Hombre': 0,
@@ -145,29 +142,27 @@ const ReportePDF = ({ dataReporte }) => {
           '50+ años Hombre': 0,
           '50+ años Mujer': 0,
         };
-        // Verificar si actividad.hijos existe y es un array
-        if (actividad.hijo && Array.isArray(actividad.hijo)) {
-          actividad.hijo.forEach((hijo) => {
-            const edadHijo = parseInt(hijo.edad, 10); // Convierte la edad del hijo a número
-            const generoHijo = hijo.genero;
+        // Recorre los hijos del cliente y actualiza las categorías
+        clienteHijos.forEach((hijo) => {
+          const edadHijo = calcularEdad(hijo.edad);
+          const generoHijo = hijo.genero;
 
-            if (edadHijo >= 0 && edadHijo <= 2) {
-              categorias[`${edadHijo}-2 años ${generoHijo}`] = (categorias[`${edadHijo}-2 años ${generoHijo}`] || 0) + 1;
-            } else if (edadHijo >= 3 && edadHijo <= 5) {
-              categorias[`3-5 años ${generoHijo}`] = (categorias[`3-5 años ${generoHijo}`] || 0) + 1;
-            } else if (edadHijo >= 6 && edadHijo <= 18) {
-              categorias[`6-18 años ${generoHijo}`] = (categorias[`6-18 años ${generoHijo}`] || 0) + 1;
-            } else if (edadHijo >= 19 && edadHijo <= 49) {
-              categorias[`19-49 años ${generoHijo}`] = (categorias[`19-49 años ${generoHijo}`] || 0) + 1;
-            } else {
-              categorias[`50+ años ${generoHijo}`] = (categorias[`50+ años ${generoHijo}`] || 0) + 1;
-            }
-          });
-        }
+          if (edadHijo >= 0 && edadHijo <= 2) {
+            categorias[generoHijo === 'Hombre' ? '0-2 años Hombre' : '0-2 años Mujer'] += 1;
+          } else if (edadHijo >= 3 && edadHijo <= 5) {
+            categorias[generoHijo === 'Hombre' ? '3-5 años Hombre' : '3-5 años Mujer'] += 1;
+          } else if (edadHijo >= 6 && edadHijo <= 18) {
+            categorias[generoHijo === 'Hombre' ? '6-18 años Hombre' : '6-18 años Mujer'] += 1;
+          } else if (edadHijo >= 19 && edadHijo <= 49) {
+            categorias[generoHijo === 'Hombre' ? '19-49 años Hombre' : '19-49 años Mujer'] += 1;
+          } else {
+            categorias[generoHijo === 'Hombre' ? '50+ años Hombre' : '50+ años Mujer'] += 1;
+          }
+        });
       
         return [
           actividad.idActividad,
-          (actividad.idCliente ? `${actividad.nameClient} ${actividad.apellidoClient}` : `${actividad.nameClient} ${actividad.apellidoClient}`),
+          `${actividad.nameClient} ${actividad.apellidoClient}`,
           actividad.dpi,
           actividad.telefono,
           actividad.genero,
@@ -175,17 +170,17 @@ const ReportePDF = ({ dataReporte }) => {
           actividad.estadoCivil,
           actividad.ocupacion,
           actividad.trabajando,
-          categorias['0-2 años Hombre'], // 0 a 2 años Hombre
-          categorias['0-2 años Mujer'],  // 0 a 2 años Mujer
-          categorias['3-5 años Hombre'], // 3 a 5 años Hombre
-          categorias['3-5 años Mujer'],  // 3 a 5 años Mujer
-          categorias['6-18 años Hombre'], // 6 a 18 años Hombre
-          categorias['6-18 años Mujer'],  // 6 a 18 años Mujer
-          categorias['19-49 años Hombre'], // 19 a 49 años Hombre
-          categorias['19-49 años Mujer'],  // 19 a 49 años Mujer
-          categorias['50+ años Hombre'],   // 50+ años Hombre
-          categorias['50+ años Mujer'],    // 50+ años Mujer
-          actividad.cantidadHijos, // Miembros
+          categorias['0-2 años Hombre'],
+          categorias['0-2 años Mujer'],
+          categorias['3-5 años Hombre'],
+          categorias['3-5 años Mujer'],
+          categorias['6-18 años Hombre'],
+          categorias['6-18 años Mujer'],
+          categorias['19-49 años Hombre'],
+          categorias['19-49 años Mujer'],
+          categorias['50+ años Hombre'],
+          categorias['50+ años Mujer'],
+          actividad.cantidadHijos,
           actividad.direccion
         ];
       });
@@ -204,19 +199,29 @@ const ReportePDF = ({ dataReporte }) => {
           halign: 'center',
           valign: 'middle',
         },
+        columnStyles: {
+          0: { // Índice de la columna CODIGO
+            fillColor: [255, 255, 0], // Color amarillo
+          },
+        },
       };
 
       doc.autoTable({
-        head: [tableHeaders[0], tableHeaders[1], tableHeaders[2]], // Encabezado separado en filas individuales
+        head: [tableHeaders[0], tableHeaders[1], tableHeaders[2]],
         body: tableData,
         ...tableOptions,
       });
 
-      // Handle pagination if needed (you may adjust this logic)
+      // Manejo del conteo de páginas
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i += 1) {
         doc.setPage(i);
-        doc.text(centerX, watermarkY + watermarkHeight + 10, `Página ${i} de ${totalPages}`, 'center');
+        
+        // Calcula la posición X para la esquina superior derecha
+        const pageWidth = doc.internal.pageSize.width;
+        const positionX = pageWidth - 30; // Ajusta el valor "40" para alejarlo más a la derecha
+        
+        doc.text(positionX, 10, `Página ${i} de ${totalPages}`);
       }
 
       doc.save('reporte_actividades.pdf');

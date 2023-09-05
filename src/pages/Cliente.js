@@ -52,7 +52,7 @@ function applySortFilter(array, comparator, query) {
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
 // Función para obtener la lista de clientes
 export const fetchClientes = (setClientes) => {
-  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes')
+  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/cliente')
     .then(response => {
       setClientes(response.data);
     })
@@ -92,13 +92,13 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [clientes, setClientes] = useState([]);
-  const targetClientId = 75893;
+  const targetClientId = 1;
   const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
   const [seleccionar, setSeleccionar] = useState(null);
   const [newEvent, setNewEvent] = useState({
-    nameClient: '',
+    nombreClient: '',
     apellidoClient: '',
     fechaNacimiento: '',
     dpi: '',
@@ -198,7 +198,7 @@ export default function UserPage() {
       });
       closeNewEventModal();
       setNewEvent({
-        nameClient: '',
+        nombreClient: '',
         apellidoClient: '',
         fechaNacimiento: '',
         dpi: '',
@@ -491,12 +491,15 @@ export default function UserPage() {
               {[...Array(newEvent.cantidadHijos)].map((_, index) => (
                 <div key={index}>
                   <TextField
-                    type="number"
-                    label={`Edad del Hijo ${index + 1}`}
+                    type="date"
+                    label={`Fecha de Nacimiento del Hijo ${index + 1}`}
                     value={childrenAges[index] || ''}
                     onChange={(e) => handleChildAgeChange(e, index)}
                     fullWidth
-                    // ...
+                    sx={{ marginBottom: 2 }}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
                   />
                 </div>
               ))}
@@ -530,7 +533,7 @@ export default function UserPage() {
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
                     const {
                       idCliente,
-                      nameClient,
+                      nombreClient,
                       apellidoClient,
                       fechaNacimiento,
                       dpi,
@@ -547,8 +550,8 @@ export default function UserPage() {
                         </TableCell>
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={nameClient} />
-                            <Typography variant="subtitle2">{nameClient}</Typography>
+                            <Avatar alt={nombreClient} />
+                            <Typography variant="subtitle2">{nombreClient}</Typography>
                           </Stack>
                         </TableCell>
                         <TableCell align="left">{apellidoClient}</TableCell>

@@ -6833,12 +6833,12 @@ jsonpointer@^5.0.0:
   resolved "https://registry.npmjs.org/jsonpointer/-/jsonpointer-5.0.1.tgz"
   integrity sha512-p/nXbhSEcu3pZRdkW1OfJhpsVtW1gd4Wa1fnQc9YLiTfAjn0312eMKimbdIQzuZl9aa9xUGaRlP9T/CJE/ditQ==
 
-jspdf-autotable@^3.6.0:
-  version "3.6.0"
-  resolved "https://registry.npmjs.org/jspdf-autotable/-/jspdf-autotable-3.6.0.tgz"
-  integrity sha512-CxO+/WylWNpwEzRLoYXrBoYpv+GeWijZFn2nqGevzMaqqMr2acC5eRgBCaBNtoipzpyfBFbCdG/UsG1eonoLrw==
+jspdf-autotable@^3.5.13:
+  version "3.5.13"
+  resolved "https://registry.npmjs.org/jspdf-autotable/-/jspdf-autotable-3.5.13.tgz"
+  integrity sha512-0oF5eHefuBjlKm60tNpPMmMS2oDNhY5U7vPkMh+s4/JZbnSjsmcUcP4j2r3k0sDvQz4ysmAi3MoOii9niJn7Og==
 
-jspdf@^2.5.1:
+jspdf@^2.1.1, jspdf@^2.5.1:
   version "2.5.1"
   resolved "https://registry.npmjs.org/jspdf/-/jspdf-2.5.1.tgz"
   integrity sha512-hXObxz7ZqoyhxET78+XR34Xu2qFGrJJ2I2bE5w4SM8eFaFEkW2xcGRVUss360fYelwRSid/jT078kbNvmoW0QA==
