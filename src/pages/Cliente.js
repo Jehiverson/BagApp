@@ -45,14 +45,14 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return array.filter((_user) => _user && _user.nameClient.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return array.filter((_user) => _user && _user.nombreClient.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
 // Función para obtener la lista de clientes
 export const fetchClientes = (setClientes) => {
-  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/cliente')
+  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes')
     .then(response => {
       setClientes(response.data);
     })
@@ -64,7 +64,6 @@ export const handleDeleteSelected = async (selectedClients, clientes, setCliente
   try {
     // Obtener los IDs de los clientes seleccionados
     const selectedIds = selectedClients.map(cliente => cliente.idCliente);
-
     // Enviar una petición DELETE para eliminar los registros
     await Promise.all(selectedIds.map(idCliente =>
       axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${idCliente}`)
@@ -92,7 +91,8 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [clientes, setClientes] = useState([]);
-  const targetClientId = 1;
+  const [childrenGenders, setChildrenGenders] = useState([]);
+  const targetClientId = 446;
   const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
@@ -120,7 +120,7 @@ export default function UserPage() {
   const handleNameChange = (e) => {
     const inputValue = e.target.value;
     if (/^[A-Za-z\s]+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, nameClient: inputValue }));
+      setNewEvent(prevEvent => ({ ...prevEvent, nombreClient: inputValue }));
     }
   };
   const handleApellidoChange = (e) => {
@@ -179,6 +179,11 @@ export default function UserPage() {
       estadoCivil: newStateCivil,
     }));
   };
+  const handleChildGenderChange = (event, index) => {
+    const newGenders = [...childrenGenders];
+    newGenders[index] = event.target.value;
+    setChildrenGenders(newGenders);
+  };
   useEffect(() => {
     fetchClientes(setClientes);
   }, []);
@@ -191,11 +196,26 @@ export default function UserPage() {
 
   const createEvent = async () => {
     try {
+      const clientId = Math.floor(Math.random() * 1000); // Genera un ID de cliente aleatorio
       const localStart = moment(newEvent.fechaNacimiento).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
-      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', {
+      const requestData = {
         ...newEvent,
+        idCliente: clientId, // Agrega el clientId en la solicitud del cliente
         fechaNacimiento: localStart,
-      });
+      };
+  
+      if (newEvent.cantidadHijos > 0) {
+        const childrenData = [...Array(newEvent.cantidadHijos)].map((_, index) => ({
+          idHijo: Math.floor(Math.random() * 1000),
+          idCliente: clientId, // Utiliza el mismo clientId para los hijos
+          edad: childrenAges[index] || '', // Fecha de nacimiento
+          genero: childrenGenders[index] || '', // Género
+        }));
+        requestData.childrenData = childrenData; // Agregar datos de los hijos al objeto de solicitud
+      }
+  
+      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', requestData);
+  
       closeNewEventModal();
       setNewEvent({
         nombreClient: '',
@@ -203,29 +223,27 @@ export default function UserPage() {
         fechaNacimiento: '',
         dpi: '',
         telefono: '',
-        genero:  '',
+        genero: '',
         estadoCivil: '',
         trabajando: '',
         ocupacion: '',
         direccion: '',
         cantidadHijos: '',
       });
-      // Insertar edades de hijos solo si hay hijos
-      if (newEvent.cantidadHijos > 0) {
-        const clientId = response.data.idCliente; // Obtener el ID del cliente creado
-        const childrenData = childrenAges.map((edad, index) => ({ idHijo: index + 1, idCliente: clientId, edad })); // Asignar un idHijo basado en el índice
-        await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/hijo', { childrenData }); // Enviar un objeto con la propiedad childrenData
-      }
+  
       setChildrenAges([]);
+      setChildrenGenders([]); // Limpiar los géneros de los hijos
+  
       // Actualizar la lista de clientes después de crear un nuevo evento
       fetchClientes(setClientes);
       // Mostrar notificación de éxito
       toast.success('Cliente creado exitosamente');
     } catch (error) {
       console.error('Error creating event:', error);
-      toast.error("Cliente no registrado");
+      toast.error('Cliente no registrado');
     }
-  }; 
+  };  
+    
   const deleteSelected = () => {
     if (selected.length > 0) {
       const selectedClients = selected.map(selectedId => clientes.find(cliente => cliente.idCliente === selectedId));
@@ -363,11 +381,11 @@ export default function UserPage() {
           <TextField
             type="text"
             label="Nombre"
-            value={newEvent.nameClient}
+            value={newEvent.nombreClient}
             onChange={handleNameChange}
             fullWidth
-            error={newEvent.nameClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nameClient)}
-            helperText={newEvent.nameClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nameClient) ? 'No se permiten números' : ''}
+            error={newEvent.nombreClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nombreClient)}
+            helperText={newEvent.nombreClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nombreClient) ? 'No se permiten números' : ''}
             sx={{ marginBottom: 2 }}
           />
           <TextField
@@ -487,22 +505,39 @@ export default function UserPage() {
             />
           </div>
           {newEvent.cantidadHijos > 0 && (
-            <div>
-              {[...Array(newEvent.cantidadHijos)].map((_, index) => (
-                <div key={index}>
-                  <TextField
-                    type="date"
-                    label={`Fecha de Nacimiento del Hijo ${index + 1}`}
-                    value={childrenAges[index] || ''}
-                    onChange={(e) => handleChildAgeChange(e, index)}
-                    fullWidth
+          <div>
+            {[...Array(newEvent.cantidadHijos)].map((_, index) => (
+              <div key={index}>
+                {/* Agrega un campo de selección de género para cada hijo */}
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <h5 style={{ margin: '0', marginRight: '16px' }}>Género del Hijo {index + 1}:</h5>
+                  <RadioGroup
+                    aria-label={`Género del Hijo ${index + 1}`}
+                    name={`generoHijo${index}`}
+                    value={childrenGenders[index] || ''} // Supongo que tienes un array childrenGenders
+                    onChange={(e) => handleChildGenderChange(e, index)} // Debes manejar el cambio de género de los hijos
+                    row
                     sx={{ marginBottom: 2 }}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                  />
+                  >
+                    <FormControlLabel value="Mujer" control={<Radio />} label="M" />
+                    <FormControlLabel value="Hombre" control={<Radio />} label="H" />
+                  </RadioGroup>
                 </div>
-              ))}
+
+                {/* Campo de fecha de nacimiento del hijo */}
+                <TextField
+                  type="date"
+                  label={`Fecha de Nacimiento del Hijo ${index + 1}`}
+                  value={childrenAges[index] || ''}
+                  onChange={(e) => handleChildAgeChange(e, index)}
+                  fullWidth
+                  sx={{ marginBottom: 2 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+              </div>
+            ))}
             </div>
           )}
             <br />
@@ -639,9 +674,9 @@ export default function UserPage() {
             <TextField
               type="text"
               label="Nombre"
-              value={seleccionar ? seleccionar.nameClient : ''}
+              value={seleccionar ? seleccionar.nombreClient : ''}
               fullWidth
-              onChange={(event) => handleFieldChange('nameClient', event.target.value)}
+              onChange={(event) => handleFieldChange('nombreClient', event.target.value)}
               sx={{ marginBottom: 2 }}
             />
             <TextField
@@ -668,6 +703,22 @@ export default function UserPage() {
               value={seleccionar ? seleccionar.dpi : ''}
               fullWidth
               onChange={(event) => handleFieldChange('dpi', event.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              type="text"
+              label="Telefono"
+              value={seleccionar ? seleccionar.telefono : ''}
+              fullWidth
+              onChange={(event) => handleFieldChange('telefono', event.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              type="text"
+              label="Genero"
+              value={seleccionar ? seleccionar.genero : ''}
+              fullWidth
+              onChange={(event) => handleFieldChange('genero', event.target.value)}
               sx={{ marginBottom: 2 }}
             />
             <TextField
@@ -700,6 +751,14 @@ export default function UserPage() {
             </div>
             <TextField
               type="text"
+              label="Ocupacion"
+              value={seleccionar ? seleccionar.ocupacion : ''}
+              fullWidth
+              onChange={(event) => handleFieldChange('ocupacion', event.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              type="text"
               label="Cantidad de Hijos"
               value={seleccionar ? seleccionar.cantidadHijos : ''}
               fullWidth
@@ -725,7 +784,7 @@ export default function UserPage() {
                   {targetClient.idCliente}
                 </Typography>
                 <Typography variant="body1">
-                  Nombre del Cliente: {targetClient.nameClient}
+                  Nombre del Cliente: {targetClient.nombreClient}
                 </Typography>
                 <Typography variant="body1">
                   Apellido del Cliente: {targetClient.apellidoClient}

@@ -134,7 +134,7 @@ export default function BlogPage() {
 
         const actividadesFormatted = clienteData.map(actividad => ({
           value: actividad.idCliente,
-          label: actividad.nameClient
+          label: actividad.nombreClient
         }));
 
         actividadesFormatted.unshift({

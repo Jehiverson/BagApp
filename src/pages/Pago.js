@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
+import {v4 as uuidv4} from 'uuid';
 import Scrollbar from '../components/scrollbar';
 import PaymentsPDFGenerator from '../sections/@dashboard/products/PaymentsPDFGenerator';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
@@ -156,7 +157,10 @@ export default function ProductsPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
   
+    const idPago = uuidv4();
+  
     const formData = {
+      idPago,
       tipoPago,
       noVoucher,
       nombre,
@@ -171,8 +175,17 @@ export default function ProductsPage() {
     try {
       const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar', formData);
       console.log('Respuesta del servidor:', response.data);
+      
+      // Obtén el idActividad de donde sea necesario
+      const idActividad = selectedActividad.value;
+  
+      // Aquí se realizará la actualización de la tabla de actividad y el pago en una sola solicitud
+      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar/${idActividad}`, {
+        idPago: idPago,
+      });
+  
       // Aquí podrías realizar acciones adicionales dependiendo de la respuesta del servidor
-      toast.success('Pago Realizado Con Exito');
+      toast.success('Pago Realizado Con Éxito');
       settipoPago('');
       setName('');
       setLastName('');
@@ -182,25 +195,9 @@ export default function ProductsPage() {
       setVoucherNumber('');
       setNIT('');
       setSelectedActividad(null);
-
-      const idActividad = selectedActividad.value; // Obtén el idActividad de donde sea necesario
-      const { idPago } = response.data; // Usar desestructuración para obtener idPago de response.data
-      updateIdPagoInActividad(idActividad, idPago);
     } catch (error) {
       console.error('Error al enviar datos:', error);
-      toast.error("Error al cargar el pago");
-    }
-  };
-  // Actualizar la Actividad por el id de Pago
-  const updateIdPagoInActividad = async (idActividad, idPago) => {
-    try {
-      const response = await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividadpagada/${idActividad}`, {
-        idPago: idPago,
-      });
-      console.log("Respuesta del servidor:", response.data);
-    } catch (error) {
-      console.error("Error al actualizar idPago en actividad:", error);
-      // Manejo de errores
+      toast.error('Error al cargar el pago');
     }
   };
 
