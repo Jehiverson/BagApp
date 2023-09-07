@@ -7,27 +7,29 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 
 export default function OpcionesPage() {
-  const [ageRange, setAgeRange] = React.useState([18, 65]);
+  const [edadRango, setedadRango] = React.useState([18, 65]);
   const [selectedActividad, setSelectedActividad] = useState(null);
   const [actividades, setActividades] = useState([]);
   const [selectedCambio, setSelectedCambio] = useState(null);
   const [cambio, setCambio] = useState([]);
   const menuPortalTargetRef = useRef(null);
 
-  const handleSliderChange = (event, newValue) => {
-    setAgeRange(newValue);
+  const cambiarRango = (event, newValue) => {
+    setedadRango(newValue);
   };
 
-  const handleSaveRange = () => {
-    const [idInicio, idFin] = ageRange;
+  const actualizarRango = () => {
+    const [idInicio, idFin] = edadRango;
     const requestData = { idInicio, idFin };
 
     axios
-      .put('http://localhost:5000/bagapp-5a770/us-central1/app/api/rango/1', requestData)
+      .put('http://localhost:5000/bagapp-react/us-central1/app/api/rango/1', requestData)
       .then(response => {
+        toast.success("Rango Actualizado");
         console.log('Rango de edades guardado exitosamente:', response.data);
       })
       .catch(error => {
+        toast.error("Error al actualizar el rango de edad");
         console.error('Error al guardar el rango de edades:', error);
       });
   };
@@ -41,31 +43,35 @@ export default function OpcionesPage() {
   };
 
   const handleCambiarClick = () => {
-    if (selectedActividad && selectedActividad.value !== 0) {
-      // Realizar la actualización del estado de pago aquí
-      const actividadId = selectedActividad.value;
-      console.log('ID de actividad seleccionada:', actividadId);
-      // Agregar un console.log para verificar la actividad seleccionada para el cambio
-      console.log('Actividad seleccionada para el cambio:', selectedActividad);
+    if (selectedActividad && selectedActividad.value !== 0 && selectedCambio && selectedCambio.value !== 0) {
+      const idActividadOrigen = selectedActividad.value;
+      const idActividadDestino = selectedCambio.value;
+      const idPago = selectedActividad.idPago; // Obtener idPago de la actividad de origen
+  
+      console.log('ID de actividad de origen:', idActividadOrigen);
+      console.log('ID de actividad de destino:', idActividadDestino);
+      console.log('ID de pago:', idPago); // Añadir un log para verificar que obtienes idPago
+  
       axios
-        .put(`http://localhost:5000/bagapp-5a770/us-central1/app/cambio/${actividadId}`, {})
+        .put(`http://localhost:5000/bagapp-react/us-central1/app/api/rango/${idActividadOrigen}/${idActividadDestino}`, { idPago })
         .then(response => {
           console.log('Actividades actualizadas exitosamente:', response.data);
           toast.success("Cambio exitoso!");
+          // Realiza cualquier acción adicional que desees después de la actualización
         })
         .catch(error => {
           console.error('Error al actualizar las actividades:', error);
           toast.error("No se realizo ningun cambio");
         });
     } else {
-      console.warn('Selecciona una actividad válida antes de cambiar el estado de pago.');
+      console.warn('Selecciona actividades válidas antes de cambiar el estado de pago.');
     }
-  };
+  };  
 
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
         const actividadData = response.data;
 
         // Filtrar actividades pagadas y no pagadas
@@ -74,7 +80,8 @@ export default function OpcionesPage() {
 
         const actividadesPagadasFormatted = actividadesPagadas.map(actividad => ({
           value: actividad.idActividad,
-          label: actividad.nombreActividad
+          label: actividad.nombreActividad,
+          idPago: actividad.idPago, // Agregar idPago a la respuesta
         }));
 
         const actividadesNoPagadasFormatted = actividadesNoPagadas.map(actividad => ({
@@ -120,15 +127,15 @@ export default function OpcionesPage() {
           <div>
             <Typography id="age-range-label">Rango de Edades</Typography>
             <Slider
-              value={ageRange}
-              onChange={handleSliderChange}
+              value={edadRango}
+              onChange={cambiarRango}
               valueLabelDisplay="auto"
               aria-labelledby="age-range-label"
               min={0}
               max={100}
             />
           </div>
-          <Button variant="contained" onClick={handleSaveRange}>
+          <Button variant="contained" onClick={actualizarRango}>
             Guardar Rango
           </Button>
         </Card>

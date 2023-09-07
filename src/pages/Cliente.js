@@ -52,7 +52,7 @@ function applySortFilter(array, comparator, query) {
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
 // Función para obtener la lista de clientes
 export const fetchClientes = (setClientes) => {
-  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes')
+  axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes')
     .then(response => {
       setClientes(response.data);
     })
@@ -66,7 +66,7 @@ export const handleDeleteSelected = async (selectedClients, clientes, setCliente
     const selectedIds = selectedClients.map(cliente => cliente.idCliente);
     // Enviar una petición DELETE para eliminar los registros
     await Promise.all(selectedIds.map(idCliente =>
-      axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${idCliente}`)
+      axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/api/clientes/${idCliente}`)
     ));
 
     // Actualizar la lista de clientes después de eliminar
@@ -214,7 +214,7 @@ export default function UserPage() {
         requestData.childrenData = childrenData; // Agregar datos de los hijos al objeto de solicitud
       }
   
-      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes', requestData);
+      const response = await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/clientes', requestData);
   
       closeNewEventModal();
       setNewEvent({
@@ -254,7 +254,7 @@ export default function UserPage() {
   // Función para actualizar el cliente
   const updateEvent = async () => {
     try {
-      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes/${seleccionar.idCliente}`, {
+      await axios.put(`http://localhost:5000/bagapp-react/us-central1/app/api/clientes/${seleccionar.idCliente}`, {
         ...seleccionar,
       });
       handleCloseModal();

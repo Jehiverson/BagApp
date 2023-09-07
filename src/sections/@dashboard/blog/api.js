@@ -4,9 +4,9 @@ export const handleUpdateActivityStatus = async (idActividad, newStatusObject, a
   try {
     console.log('Updating activity status with ID:', idActividad);
     console.log('Updating activity status:', idActividad, newStatusObject.estadoActividad);
-    await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${idActividad}`, newStatusObject);
+    await axios.put(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/estado/${idActividad}`, newStatusObject);
 
-    const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+    const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
     console.log('Updated activities:', response.data);
     setActividades(response.data);
   } catch (error) {

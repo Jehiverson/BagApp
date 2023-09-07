@@ -95,7 +95,7 @@ export default function BlogPage() {
   };  
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+      const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
       const dataReporte = response.data;
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
@@ -117,7 +117,7 @@ export default function BlogPage() {
   };  
   const hijosDatos = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/bagapp-5a770/us-central1/app/api/hijo");
+      const response = await axios.get("http://localhost:5000/bagapp-react/us-central1/app/api/hijo");
       const dataHijo = response.data;
       setHijo(dataHijo);
     } catch (error) {
@@ -129,7 +129,7 @@ export default function BlogPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
+        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
         const clienteData = response.data;
 
         const actividadesFormatted = clienteData.map(actividad => ({
@@ -165,7 +165,7 @@ export default function BlogPage() {
         idCliente: selectedCliente.value // Usar el valor seleccionado del cliente
       };
   
-      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades', formattedEvent);
+      await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/actividades', formattedEvent);
       toast.success('Actividad creada con exito!');
       fetchEvents();
       closeNewEventModal();
@@ -185,7 +185,8 @@ export default function BlogPage() {
   };   
   const deleteEvent = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${id}`);
+      console.log(id);
+      await axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/${id}`);
       fetchEvents();
       setSelectedEvent(null);
       toast.success('Actividad Eliminada');
@@ -210,15 +211,15 @@ export default function BlogPage() {
   };
   const updateEvent = () => {
     const eventData = {
-      title: selectedEvent.title,
-      description: selectedEvent.description,
-      entrega: moment(selectedEvent.entrega).format('YYYY-MM-DD'),
-      start: moment(selectedEvent.start).startOf('day').toISOString(),
-      end: moment(selectedEvent.end).startOf('day').toISOString(),
-      cliente: selectedCliente.value,
+      nombreActividad: selectedEvent.title,
+      descripcionActividad: selectedEvent.description,
+      fechaEntrega: moment(selectedEvent.entrega).format('YYYY-MM-DD'),
+      fechaInicio: moment(selectedEvent.start).startOf('day').toISOString(),
+      fechaFinal: moment(selectedEvent.end).startOf('day').toISOString(),
+      idCliente: selectedCliente.value,
     };
     console.log("Datos:",eventData);
-    axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividadupdate/${selectedEvent.id}`, eventData)
+    axios.put(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/${selectedEvent.id}`, eventData)
       .then((res) => {
         console.log(res);
         setSelectedEvent(null);
@@ -245,7 +246,7 @@ export default function BlogPage() {
       setOrder(isAsc ? 'desc' : 'asc');
       setOrderBy(property);
   };
-  const handleSelectAll = (event) => {
+  const handleSelectAll = (event, idActividad) => {
     if (event.target.checked) {
       setSelected(actividadData.map((actividadData) => actividadData.idActividad));
     } else {

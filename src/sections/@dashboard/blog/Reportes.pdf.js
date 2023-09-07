@@ -14,6 +14,8 @@ function calcularEdad(fechaNacimiento) {
 }
 
 const ReportePDF = ({ dataReporte, hijo }) => {
+  console.log(dataReporte);
+  console.log(hijo);
   const [modalOpen, setModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
