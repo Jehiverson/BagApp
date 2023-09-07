@@ -14,8 +14,6 @@ function calcularEdad(fechaNacimiento) {
 }
 
 const ReportePDF = ({ dataReporte, hijo }) => {
-  console.log(dataReporte);
-  console.log(hijo);
   const [modalOpen, setModalOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
@@ -125,7 +123,8 @@ const ReportePDF = ({ dataReporte, hijo }) => {
         ],
       ]; 
       const tableData = filteredActivities.map((actividad) => {
-        const birthDate = new Date(actividad.fechaNacimiento);
+        const clienteInfo = actividad.cliente; 
+        const birthDate = new Date(clienteInfo.fechaNacimiento);
         const age = currentDate.getFullYear() - birthDate.getFullYear();
         const formattedAge = Number.isNaN(age) ? '' : age.toString();
 
@@ -164,14 +163,14 @@ const ReportePDF = ({ dataReporte, hijo }) => {
       
         return [
           actividad.idActividad,
-          `${actividad.nameClient} ${actividad.apellidoClient}`,
-          actividad.dpi,
-          actividad.telefono,
-          actividad.genero,
+          `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
+          clienteInfo.dpi,
+          clienteInfo.telefono,
+          clienteInfo.genero,
           formattedAge,
-          actividad.estadoCivil,
-          actividad.ocupacion,
-          actividad.trabajando,
+          clienteInfo.estadoCivil,
+          clienteInfo.ocupacion,
+          clienteInfo.trabajando,
           categorias['0-2 años Hombre'],
           categorias['0-2 años Mujer'],
           categorias['3-5 años Hombre'],
@@ -182,8 +181,8 @@ const ReportePDF = ({ dataReporte, hijo }) => {
           categorias['19-49 años Mujer'],
           categorias['50+ años Hombre'],
           categorias['50+ años Mujer'],
-          actividad.cantidadHijos,
-          actividad.direccion
+          clienteInfo.cantidadHijos,
+          clienteInfo.direccion
         ];
       });
 

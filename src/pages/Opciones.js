@@ -23,7 +23,7 @@ export default function OpcionesPage() {
     const requestData = { idInicio, idFin };
 
     axios
-      .put('http://localhost:5000/bagapp-react/us-central1/app/api/rango/1', requestData)
+      .put('http://localhost:5000/bagapp-5a770/us-central1/app/api/rango/1', requestData)
       .then(response => {
         toast.success("Rango Actualizado");
         console.log('Rango de edades guardado exitosamente:', response.data);
@@ -53,7 +53,7 @@ export default function OpcionesPage() {
       console.log('ID de pago:', idPago); // Añadir un log para verificar que obtienes idPago
   
       axios
-        .put(`http://localhost:5000/bagapp-react/us-central1/app/api/rango/${idActividadOrigen}/${idActividadDestino}`, { idPago })
+        .put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/rango/${idActividadOrigen}/${idActividadDestino}`, { idPago })
         .then(response => {
           console.log('Actividades actualizadas exitosamente:', response.data);
           toast.success("Cambio exitoso!");
@@ -71,7 +71,7 @@ export default function OpcionesPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
         const actividadData = response.data;
 
         // Filtrar actividades pagadas y no pagadas

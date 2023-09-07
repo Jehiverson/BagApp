@@ -10,7 +10,7 @@ export default function PaginaDashboardApp() {
 
   useEffect(() => {
     // Obtener datos de actividades
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades')
+    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades')
       .then(response => {
         const actividades = response.data;
         const datosFormateados = actividades.map(actividad => {
@@ -34,7 +34,7 @@ export default function PaginaDashboardApp() {
       });
 
     // Obtener datos de pagos
-    axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/pagar')
+    axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar')
       .then(response => {
         const pagos = response.data;
         const datosMensuales = {};

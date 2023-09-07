@@ -95,7 +95,7 @@ export default function BlogPage() {
   };  
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/actividades');
+      const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
       const dataReporte = response.data;
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
@@ -111,13 +111,14 @@ export default function BlogPage() {
       setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
       setactividadData(response.data);
       setData(dataReporte);
+      console.log('nombreClient en actividadData:', actividadData.map(item => item.cliente.nombreClient));
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };  
   const hijosDatos = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/bagapp-react/us-central1/app/api/hijo");
+      const response = await axios.get("http://localhost:5000/bagapp-5a770/us-central1/app/api/hijo");
       const dataHijo = response.data;
       setHijo(dataHijo);
     } catch (error) {
@@ -129,7 +130,7 @@ export default function BlogPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-react/us-central1/app/api/clientes');
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/clientes');
         const clienteData = response.data;
 
         const actividadesFormatted = clienteData.map(actividad => ({
@@ -165,7 +166,7 @@ export default function BlogPage() {
         idCliente: selectedCliente.value // Usar el valor seleccionado del cliente
       };
   
-      await axios.post('http://localhost:5000/bagapp-react/us-central1/app/api/actividades', formattedEvent);
+      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades', formattedEvent);
       toast.success('Actividad creada con exito!');
       fetchEvents();
       closeNewEventModal();
@@ -186,7 +187,7 @@ export default function BlogPage() {
   const deleteEvent = async (id) => {
     try {
       console.log(id);
-      await axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/${id}`);
+      await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${id}`);
       fetchEvents();
       setSelectedEvent(null);
       toast.success('Actividad Eliminada');
@@ -219,7 +220,7 @@ export default function BlogPage() {
       idCliente: selectedCliente.value,
     };
     console.log("Datos:",eventData);
-    axios.put(`http://localhost:5000/bagapp-react/us-central1/app/api/actividades/${selectedEvent.id}`, eventData)
+    axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades/${selectedEvent.id}`, eventData)
       .then((res) => {
         console.log(res);
         setSelectedEvent(null);
@@ -344,7 +345,6 @@ export default function BlogPage() {
                       estadoActividad,
                       fechaInicio,
                       fechaFinal,
-                      nameClient,
                       idPago,
                     } = row;
                     const selectedUser = selected.indexOf(idActividad) !== -1;
@@ -366,7 +366,7 @@ export default function BlogPage() {
                         </TableCell>
                         <TableCell align="left">{moment.utc(fechaInicio).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{moment.utc(fechaFinal).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
-                        <TableCell align="left">{nameClient}</TableCell>
+                        <TableCell align="left">{row.cliente.nombreClient}</TableCell>
                         <TableCell align="left">{idPago}</TableCell>
                       </TableRow>
                     );
