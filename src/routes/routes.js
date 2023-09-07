@@ -2,7 +2,6 @@ import { Navigate, useRoutes } from 'react-router-dom';
 import DashboardLayout from '../layouts/dashboard';
 import Actividad from '../pages/Actividad';
 import Cliente from '../pages/Cliente';
-import LoginPage from '../pages/LoginPage';
 import Page404 from '../pages/Page404';
 import Pago from '../pages/Pago';
 import Home from '../pages/Home';
@@ -14,7 +13,6 @@ export default function Router() {
       path: '/dashboard',
       element: <DashboardLayout />,
       children: [
-        { element: <Navigate to="/dashboard/home" />, index: true },
         { path: 'home', element: <Home /> },
         { path: 'cliente', element: <Cliente /> },
         { path: 'pago', element: <Pago /> },
@@ -23,8 +21,8 @@ export default function Router() {
       ],
     },
     {
-      path: 'login',
-      element: <LoginPage />,
+      path: '/',
+      element: <Navigate to="/dashboard/home" />,
     },
     {
       path: '*',

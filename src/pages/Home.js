@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, Card, CardContent, CardHeader } from '@mui/material';
+import { Container, Typography, Card, CardContent, CardHeader, } from '@mui/material';
 import { BarChart, Bar, PieChart, Pie, Tooltip, Legend, Cell, XAxis, YAxis } from 'recharts';
+import Profile from '../_mock/profile';
 
 export default function PaginaDashboardApp() {
   const [datosActividades, setDatosActividades] = useState([]);
@@ -96,6 +97,8 @@ export default function PaginaDashboardApp() {
             </Typography>
           </CardHeader>
           <CardContent sx={{ mb: 2 }}>
+            <Profile />
+            <br />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ width: '100%', maxWidth: '600px' }}>
                 <Typography variant="h6">Ingresos Generados</Typography>

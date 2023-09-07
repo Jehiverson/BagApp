@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
@@ -9,18 +9,6 @@ import { StyledChart } from './components/chart';
 import ScrollToTop from './components/scroll-to-top';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    sessionStorage.setItem('isAuthenticated', true);
-    console.log('Autenticación establecida: true');
-  };
-  
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('isAuthenticated');
-  };  
 
   return (
     <HelmetProvider>
@@ -28,7 +16,7 @@ export default function App() {
         <ThemeProvider>
           <ScrollToTop />
           <StyledChart />
-          <Router isAuthenticated={isAuthenticated} />
+            <Router />
           <ToastContainer />
         </ThemeProvider>
       </BrowserRouter>
