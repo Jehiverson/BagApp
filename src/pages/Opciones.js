@@ -23,7 +23,7 @@ export default function OpcionesPage() {
     const requestData = { idInicio, idFin };
 
     axios
-      .put('http://localhost:5000/bagapp-5a770/us-central1/app/api/rango/1', requestData)
+      .put('http://localhost:5000/bagapp-5a770/us-central1/app/rango/1', requestData)
       .then(response => {
         toast.success("Rango Actualizado");
         console.log('Rango de edades guardado exitosamente:', response.data);

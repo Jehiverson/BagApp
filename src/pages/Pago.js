@@ -143,7 +143,7 @@ export default function ProductsPage() {
     }
     async function getPagos() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar');
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/pago');
         const pagoData = response.data;
         setPagoData(pagoData);
       } catch (error) {
@@ -173,14 +173,14 @@ export default function ProductsPage() {
     };
   
     try {
-      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar', formData);
+      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/pago', formData);
       console.log('Respuesta del servidor:', response.data);
       
       // Obtén el idActividad de donde sea necesario
       const idActividad = selectedActividad.value;
   
       // Aquí se realizará la actualización de la tabla de actividad y el pago en una sola solicitud
-      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/api/pagar/${idActividad}`, {
+      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/pago/${idActividad}`, {
         idPago: idPago,
       });
   
