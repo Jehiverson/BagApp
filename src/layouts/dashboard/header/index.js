@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { styled } from '@mui/material/styles';
 import { Box, Stack, AppBar, Toolbar, IconButton } from '@mui/material';
 // utils
-import LoginButton from '../../../components/auth/LoginButton';
 import { bgBlur } from '../../../utils/cssStyles';
 // components
 import Iconify from '../../../components/iconify';
@@ -68,7 +67,6 @@ export default function Header({ onOpenNav }) {
             sm: 1,
           }}
         >
-          <LoginButton />
           <NotificationsPopover />
           <AccountPopover />
         </Stack>

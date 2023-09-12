@@ -6,6 +6,8 @@ import Page404 from '../pages/Page404';
 import Pago from '../pages/Pago';
 import Home from '../pages/Home';
 import Opciones from '../pages/Opciones';
+import Register from '../pages/RegisterPage';
+import Login from '../pages/LoginPage';
 
 export default function Router() {
   const routes = useRoutes([
@@ -28,6 +30,14 @@ export default function Router() {
       path: '*',
       element: <Page404 />,
     },
+    {
+      path: '/register',
+      element: <Register/>,
+    },
+    {
+      path: '/login',
+      element: <Login/>
+    }
   ]);
 
   return routes;

@@ -12,7 +12,7 @@ import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
 import {v4 as uuidv4} from 'uuid';
 import Scrollbar from '../components/scrollbar';
-import PaymentsPDFGenerator from '../sections/@dashboard/products/PaymentsPDFGenerator';
+import PaymentsPDFGenerator from '../sections/@dashboard/pagopdf/PaymentsPDFGenerator';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 
 // Estilos personalizados para el DatePicker
@@ -123,7 +123,7 @@ export default function ProductsPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/api/actividades');
+        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/actividad');
         const actividadData = response.data;
 
         const actividadesFormatted = actividadData.map(actividad => ({
