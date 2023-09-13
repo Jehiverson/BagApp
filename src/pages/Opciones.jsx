@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, Card, Slider, Button } from '@mui/material';
-import Select from 'react-select';
+import { Container, Typography, Card, Button } from '@mui/material';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
+import SliderComponent from '../components/Slider/SliderComponent';
+import SelectComponent from '../components/Select/SelectComponent';
+import * as api from '../api/actividadApi';
 
 export default function OpcionesPage() {
   const [edadRango, setedadRango] = React.useState([18, 65]);
@@ -18,21 +19,17 @@ export default function OpcionesPage() {
     setedadRango(newValue);
   };
 
-  const actualizarRango = () => {
-    const [idInicio, idFin] = edadRango;
-    const requestData = { idInicio, idFin };
-
-    axios
-      .put('http://localhost:5000/bagapp-5a770/us-central1/app/rango/1', requestData)
-      .then(response => {
-        toast.success("Rango Actualizado");
-        console.log('Rango de edades guardado exitosamente:', response.data);
-      })
-      .catch(error => {
-        toast.error("Error al actualizar el rango de edad");
-        console.error('Error al guardar el rango de edades:', error);
-      });
-  };
+  const actualizarRango = useCallback(async () => {
+    try {
+      const [idInicio, idFin] = edadRango;
+      await api.actualizarRangoEdades(idInicio, idFin);
+      toast.success('Rango Actualizado');
+      console.log('Rango de edades guardado exitosamente');
+    } catch (error) {
+      toast.error('Error al actualizar el rango de edad');
+      console.error('Error al guardar el rango de edades:', error);
+    }
+  }, [edadRango]);
 
   const handleActividadChange = (selectedOption) => {
     setSelectedActividad(selectedOption);
@@ -42,7 +39,7 @@ export default function OpcionesPage() {
     setSelectedCambio(selectedOption);
   };
 
-  const handleCambiarClick = () => {
+  const handleCambiarClick = useCallback(async () => {
     if (selectedActividad && selectedActividad.value !== 0 && selectedCambio && selectedCambio.value !== 0) {
       const idActividadOrigen = selectedActividad.value;
       const idActividadDestino = selectedCambio.value;
@@ -52,26 +49,22 @@ export default function OpcionesPage() {
       console.log('ID de actividad de destino:', idActividadDestino);
       console.log('ID de pago:', idPago); // Añadir un log para verificar que obtienes idPago
   
-      axios
-        .put(`http://localhost:5000/bagapp-5a770/us-central1/app/rango/${idActividadOrigen}/${idActividadDestino}`, { idPago })
-        .then(response => {
-          console.log('Actividades actualizadas exitosamente:', response.data);
-          toast.success("Cambio exitoso!");
-          // Realiza cualquier acción adicional que desees después de la actualización
-        })
-        .catch(error => {
-          console.error('Error al actualizar las actividades:', error);
-          toast.error("No se realizo ningun cambio");
-        });
-    } else {
-      console.warn('Selecciona actividades válidas antes de cambiar el estado de pago.');
+      try {
+        await api.cambiarActividad(idActividadOrigen, idActividadDestino, idPago);
+        console.log('Actividades actualizadas exitosamente');
+        toast.success('Cambio exitoso!');
+        // Realiza cualquier acción adicional que desees después de la actualización
+      } catch (error) {
+        console.error('Error al actualizar las actividades:', error);
+        toast.error('No se realizó ningún cambio');
+      }
     }
-  };  
+  }, [selectedActividad, selectedCambio]); // Dependencias corregidas  
 
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/actividad');
+        const response = await api.obtenerActividades();
         const actividadData = response.data;
 
         // Filtrar actividades pagadas y no pagadas
@@ -123,17 +116,9 @@ export default function OpcionesPage() {
           <Typography variant="h5" sx={{ mb: 2 }}>
             Bienvenido
           </Typography>
-          <Typography variant="h6">Configuración de Rango de Edades</Typography>
           <div>
             <Typography id="age-range-label">Rango de Edades</Typography>
-            <Slider
-              value={edadRango}
-              onChange={cambiarRango}
-              valueLabelDisplay="auto"
-              aria-labelledby="age-range-label"
-              min={0}
-              max={100}
-            />
+            <SliderComponent value={edadRango} onChange={cambiarRango} />
           </div>
           <Button variant="contained" onClick={actualizarRango}>
             Guardar Rango
@@ -144,23 +129,21 @@ export default function OpcionesPage() {
         <Card sx={{ p: 3, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', backgroundColor: 'white' }}>
           <div>
             <Typography variant="h6">Cambio de Actividad</Typography>
-            <div style={{ width: '100%', minWidth: 10, marginTop: "25px" }}>
-              <Select
+            <div style={{ width: '100%', minWidth: 10, marginTop: '25px' }}>
+              <SelectComponent
                 value={selectedActividad}
                 onChange={handleActividadChange}
                 options={actividades}
-                fullWidth
-                menuPortalTarget={menuPortalTargetRef.current} // Mueve el menú emergente fuera del Card
+                menuPortalTarget={menuPortalTargetRef.current}
               />
             </div>
             <br />
-            <div style={{marginTop: "25px"}}>
-              <Select
+            <div style={{ marginTop: '25px' }}>
+              <SelectComponent
                 value={selectedCambio}
                 onChange={handleCambioChange}
                 options={cambio}
-                fullWidth
-                menuPortalTarget={menuPortalTargetRef.current} // Mueve el menú emergente fuera del Card
+                menuPortalTarget={menuPortalTargetRef.current}
               />
             </div>
             <br />
