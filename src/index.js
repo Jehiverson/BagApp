@@ -1,26 +1,12 @@
 import ReactDOM from 'react-dom/client';
 
-//
-import { Auth0Provider } from '@auth0/auth0-react';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import reportWebVitals from './reportWebVitals';
 
-const domain = process.env.REACT_APP_AUTH0_DOMAIN;
-const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-root.render(
-    <Auth0Provider 
-        domain={domain} 
-        clientId={clientId} 
-        redirectUri={window.location.origin}
-        onError={(error) => console.error(error)}
-    >
-        <App />
-    </Auth0Provider>
-);
+root.render( <App />);
 
 // If you want to enable client cache, register instead.
 serviceWorker.unregister();
