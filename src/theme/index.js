@@ -11,8 +11,6 @@ import GlobalStyles from './globalStyles';
 import customShadows from './customShadows';
 import componentsOverride from './overrides';
 
-// ----------------------------------------------------------------------
-
 ThemeProvider.propTypes = {
   children: PropTypes.node,
 };

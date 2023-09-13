@@ -1,13 +1,23 @@
-import React from  'react';
-import { useAuth0 } from '@auth0/auth0-react';
+// LogoutButton.js
+import React, { useCallback } from 'react';
 import { Button } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const LogoutButton = () => {
-    const {logout} = useAuth0()
+  const { logout } = useAuth(); // Obtén la función de logout del contexto
+  const navigate = useNavigate();
 
-    return(
-        <Button onClick={() => logout()}>Logout</Button>
-    )
-}
+  const onSubmit = useCallback(async () => {
+    await logout(); // Llama a la función de logout
+    navigate('/'); // Redirigir aquí después de cerrar sesión exitosamente
+  }, [logout, navigate]);
 
-export default LogoutButton
+  return (
+    <Button onClick={onSubmit}>
+      Logout
+    </Button>
+  );
+};
+
+export default LogoutButton;

@@ -12,7 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import {obtenerClientes} from "../api/clienteApi";
+import { useAuth } from '../context/AuthContext';
 
 const TABLE_HEAD = [
   { id: 'nameClient', label: 'Nombre', alignRight: false },
@@ -90,6 +90,7 @@ export default function UserPage() {
   const [orderBy, setOrderBy] = useState('nameClient');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const {user} = useAuth();
 
   const [clientes, setClientes] = useState([]);
   const [childrenGenders, setChildrenGenders] = useState([]);
@@ -337,7 +338,8 @@ export default function UserPage() {
       </Helmet>
 
       <Container>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+        {user.tipoRol === 'Administrador' && (
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
             Clientes
           </Typography>
@@ -345,6 +347,7 @@ export default function UserPage() {
             Nuevo Cliente
           </Button>
         </Stack>
+        )}
         {/* Modal para Insertar Clientes */}
         <ReactModal
           isOpen={isNewEventModalOpen}
@@ -550,7 +553,8 @@ export default function UserPage() {
             Cancelar
           </Button>
         </ReactModal>
-        <Card>
+        {user.tipoRol === 'Administrador' && (
+          <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={deleteSelected} selected={selected} />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -642,6 +646,7 @@ export default function UserPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
+        )}
         {/* Modal para Actualizar Clientes */}
         <ReactModal
           isOpen={abrirModal}
@@ -775,50 +780,51 @@ export default function UserPage() {
             </Button>
           </div>
         </ReactModal>
-        <br />
-        <Typography variant="h4" gutterBottom>Cliente</Typography>
-        <div>
-          {targetClient && (
-            <Card sx={{ padding: '16px' }}>
-              <div>
-                <Typography variant="h4" gutterBottom>
-                  {targetClient.idCliente}
-                </Typography>
-                <Typography variant="body1">
-                  Nombre del Cliente: {targetClient.nombreClient}
-                </Typography>
-                <Typography variant="body1">
-                  Apellido del Cliente: {targetClient.apellidoClient}
-                </Typography>
-                <Typography variant="body1">
-                  Fecha de Nacimiento: {targetClient.fechaNacimiento}
-                </Typography>
-                <Typography variant="body1">
-                  DPI: {targetClient.dpi}
-                </Typography>
-                <Typography variant="body1">
-                  Teléfono: {targetClient.telefono}
-                </Typography>
-                <Typography variant="body1">
-                  Género: {targetClient.genero}
-                </Typography>
-                <Typography variant="body1">
-                  Estado Civil: {targetClient.estadoCivil}
-                </Typography>
-                <Typography variant="body1">
-                  Trabajando: {targetClient.trabajando}
-                </Typography>
-                <Typography variant="body1">
-                  Ocupación: {targetClient.ocupacion}
-                </Typography>
-                <Typography variant="body1">
-                  Cantidad de Hijos: {targetClient.cantidadHijos}
-                </Typography>
-                {/* Agrega más líneas para mostrar otros datos del cliente */}
-              </div>
-            </Card>
-          )}
-        </div>
+        {user.tipoRol === 'Usuario' && (
+          <div>
+            <Typography variant="h4" gutterBottom>Cliente</Typography>
+            {targetClient && (
+              <Card sx={{ padding: '16px' }}>
+                <div>
+                  <Typography variant="h4" gutterBottom>
+                    {targetClient.idCliente}
+                  </Typography>
+                  <Typography variant="body1">
+                    Nombre del Cliente: {targetClient.nombreClient}
+                  </Typography>
+                  <Typography variant="body1">
+                    Apellido del Cliente: {targetClient.apellidoClient}
+                  </Typography>
+                  <Typography variant="body1">
+                    Fecha de Nacimiento: {targetClient.fechaNacimiento}
+                  </Typography>
+                  <Typography variant="body1">
+                    DPI: {targetClient.dpi}
+                  </Typography>
+                  <Typography variant="body1">
+                    Teléfono: {targetClient.telefono}
+                  </Typography>
+                  <Typography variant="body1">
+                    Género: {targetClient.genero}
+                  </Typography>
+                  <Typography variant="body1">
+                    Estado Civil: {targetClient.estadoCivil}
+                  </Typography>
+                  <Typography variant="body1">
+                    Trabajando: {targetClient.trabajando}
+                  </Typography>
+                  <Typography variant="body1">
+                    Ocupación: {targetClient.ocupacion}
+                  </Typography>
+                  <Typography variant="body1">
+                    Cantidad de Hijos: {targetClient.cantidadHijos}
+                  </Typography>
+                  {/* Agrega más líneas para mostrar otros datos del cliente */}
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
 
       </Container>
     </>

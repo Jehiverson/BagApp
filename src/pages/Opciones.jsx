@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import SliderComponent from '../components/Slider/SliderComponent';
 import SelectComponent from '../components/Select/SelectComponent';
-import * as api from '../api/actividadApi';
+import {actualizarRangoEdades, cambiarActividad} from "../api/opcionesAPI"
+import { obtenerActividades } from '../api/actividadApi';
 
 export default function OpcionesPage() {
   const [edadRango, setedadRango] = React.useState([18, 65]);
@@ -22,7 +23,7 @@ export default function OpcionesPage() {
   const actualizarRango = useCallback(async () => {
     try {
       const [idInicio, idFin] = edadRango;
-      await api.actualizarRangoEdades(idInicio, idFin);
+      await actualizarRangoEdades(idInicio, idFin);
       toast.success('Rango Actualizado');
       console.log('Rango de edades guardado exitosamente');
     } catch (error) {
@@ -50,7 +51,7 @@ export default function OpcionesPage() {
       console.log('ID de pago:', idPago); // Añadir un log para verificar que obtienes idPago
   
       try {
-        await api.cambiarActividad(idActividadOrigen, idActividadDestino, idPago);
+        await cambiarActividad(idActividadOrigen, idActividadDestino, idPago);
         console.log('Actividades actualizadas exitosamente');
         toast.success('Cambio exitoso!');
         // Realiza cualquier acción adicional que desees después de la actualización
@@ -64,7 +65,7 @@ export default function OpcionesPage() {
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await api.obtenerActividades();
+        const response = await obtenerActividades();
         const actividadData = response.data;
 
         // Filtrar actividades pagadas y no pagadas

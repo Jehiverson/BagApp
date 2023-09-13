@@ -1,6 +1,6 @@
 import {createContext, useContext, useState, useEffect} from "react";
 import Cookies from "js-cookie";
-import { registerRequest, loginRequest, verityTokenRequet } from "../api/auth";
+import { registerRequest, loginRequest, verityTokenRequet, logoutRequest } from "../api/auth";
 
 export const AuthContext = createContext();
 
@@ -44,6 +44,19 @@ export const AuthProvider = ({children}) => {
         }
     }
 
+    const logout = async (user) => {
+        try {
+            await logoutRequest();
+            Cookies.remove("token"); // Borra la cookie de autenticación
+            setIsAuthenticated(false); // Actualiza el contexto a no autenticado
+            setUser(null);
+            console.log('Sesión Cerrada');
+        } catch (error) {
+            console.log(error)
+            setErrors(error.response.data);
+        }
+    }
+
     useEffect(() => {
         if (errors.length > 0) {
             const timer = setTimeout(() => {
@@ -76,8 +89,10 @@ export const AuthProvider = ({children}) => {
                 setIsAuthenticated(false);
                 setUser(null);
                 setLoading(false);
+                Cookies.remove("token");
             }
         }
+        
         checkLogin();
     }, []);
 
@@ -85,6 +100,7 @@ export const AuthProvider = ({children}) => {
         <AuthContext.Provider value={{
             signup,
             signin,
+            logout,
             loading,
             user,
             isAuthenticated,

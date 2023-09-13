@@ -8,14 +8,13 @@ import { Box, Link, Drawer, Typography, Avatar } from '@mui/material';
 import account from '../../../_mock/account';
 // hooks
 import useResponsive from '../../../hooks/useResponsive';
+import { useAuth } from '../../../context/AuthContext';
 // components
 import Logo from '../../../components/logo';
 import Scrollbar from '../../../components/scrollbar';
 import NavSection from '../../../components/nav-section';
 //
 import navConfig from './config';
-
-// ----------------------------------------------------------------------
 
 const NAV_WIDTH = 280;
 
@@ -36,7 +35,7 @@ Nav.propTypes = {
 
 export default function Nav({ openNav, onCloseNav }) {
   const { pathname } = useLocation();
-
+  const {user} = useAuth();
   const isDesktop = useResponsive('up', 'lg');
 
   useEffect(() => {
@@ -45,6 +44,13 @@ export default function Nav({ openNav, onCloseNav }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  const filteredNavConfig = navConfig.filter((option) => {
+    if (option.title === 'Opciones' && user.tipoRol !== 'Administrador') {
+      return false;
+    }
+    return true;
+  })
 
   const renderContent = (
     <Scrollbar
@@ -75,7 +81,7 @@ export default function Nav({ openNav, onCloseNav }) {
         </Link>
       </Box>
 
-      <NavSection data={navConfig} />
+      <NavSection data={filteredNavConfig} />
 
       <Box sx={{ flexGrow: 1 }} />
     </Scrollbar>

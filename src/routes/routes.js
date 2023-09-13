@@ -1,4 +1,4 @@
-import { Navigate, useRoutes } from 'react-router-dom';
+import { useRoutes } from 'react-router-dom';
 import DashboardLayout from '../layouts/dashboard';
 import Actividad from '../pages/Actividad';
 import Cliente from '../pages/Cliente';
@@ -8,6 +8,8 @@ import Home from '../pages/Home';
 import Opciones from '../pages/Opciones';
 import Register from '../pages/RegisterPage';
 import Login from '../pages/LoginPage';
+import ProtectedRoute from '../ProtectedRoute';
+import LoginForm from '../pages/Home/HomePage';
 
 export default function Router() {
   const routes = useRoutes([
@@ -15,16 +17,16 @@ export default function Router() {
       path: '/dashboard',
       element: <DashboardLayout />,
       children: [
-        { path: 'home', element: <Home /> },
+        { path: 'home', element: <ProtectedRoute><Home /></ProtectedRoute> },
         { path: 'cliente', element: <Cliente /> },
-        { path: 'pago', element: <Pago /> },
-        { path: 'actividad', element: <Actividad /> },
-        { path: 'opcion', element: <Opciones /> },
+        { path: 'pago', element: <DashboardLayout><Pago /></DashboardLayout> },
+        { path: 'actividad', element: <DashboardLayout><Actividad /></DashboardLayout> },
+        { path: 'opcion', element: <DashboardLayout><Opciones /></DashboardLayout> },
       ],
     },
     {
       path: '/',
-      element: <Navigate to="/dashboard/home" />,
+      element: <LoginForm />,
     },
     {
       path: '*',
