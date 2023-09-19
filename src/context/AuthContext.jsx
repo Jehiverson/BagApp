@@ -24,11 +24,13 @@ export const AuthProvider = ({children}) => {
             console.log(res.data);
             setUser(res.data);
             setIsAuthenticated(true);
+            return res.data; // Devuelve el valor en caso de éxito
         } catch (error) {
             console.log(error)
             setErrors(error.response.data);
+            throw error; // Lanza el error en caso de fallo
         }
-    }
+    }    
 
     const signin = async (user) => {
         try {
@@ -36,62 +38,88 @@ export const AuthProvider = ({children}) => {
             console.log(res);
             setUser(res.data);
             setIsAuthenticated(true);
+            // Almacena el usuario en el localStorage
+            localStorage.setItem('user', JSON.stringify(res.data));
+            return res.data; // Devuelve el valor en caso de éxito
         } catch(error) {
             if (Array.isArray(error.response.data)) {
-                return setErrors(error.response.data)
+                setErrors(error.response.data);
+            } else {
+                setErrors([error.response.data.message]);
             }
-            setErrors([error.response.data.message])
+            throw error; // Lanza el error en caso de fallo
         }
+    }    
+
+    const clearUserFromLocalStorage = () => {
+        // Elimina el usuario del localStorage
+        localStorage.removeItem('user');
     }
 
-    const logout = async (user) => {
+    const logout = async () => {
         try {
             await logoutRequest();
-            Cookies.remove("token"); // Borra la cookie de autenticación
-            setIsAuthenticated(false); // Actualiza el contexto a no autenticado
+            Cookies.remove("token");
+            setIsAuthenticated(false);
             setUser(null);
+            clearUserFromLocalStorage();
             console.log('Sesión Cerrada');
         } catch (error) {
             console.log(error)
             setErrors(error.response.data);
+            throw error;
         }
+        // No es necesario un return aquí
     }
-
+    
     useEffect(() => {
+        let timer;
         if (errors.length > 0) {
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 setErrors([])
             }, 5000)
-            return () => clearTimeout(timer)
         }
-    }, [errors]);
+        return () => clearTimeout(timer);
+    }, [errors]);    
 
     useEffect(() => {
-        async function checkLogin() {
-            const cookies = Cookies.get()
-            if(!cookies.token) {
+        const checkLogin = async () => {
+            const cookies = Cookies.get();
+            const localStorageUser = localStorage.getItem('user');
+            if (!cookies.token) {
                 setIsAuthenticated(false);
                 setLoading(false);
-                return setUser(null);
+                setUser(null);
+                return null; // Devuelve null en este caso
+            }
+            if (localStorageUser) {
+                // Si hay un usuario en el localStorage, úsalo
+                setUser(JSON.parse(localStorageUser));
+                setIsAuthenticated(true);
+                setLoading(false);
+                return null;
             }
             try {
-                const res = await verityTokenRequet(cookies.token)
+                const res = await verityTokenRequet(cookies.token);
                 if (!res.data) {
                     setIsAuthenticated(false);
                     setLoading(false);
-                    return;
+                    return null; // Devuelve null en este caso
                 }
-                
+                localStorage.setItem('user', JSON.stringify(res.data));
+        
                 setIsAuthenticated(true);
                 setUser(res.data);
                 setLoading(false);
-            } catch(error) {
+            } catch (error) {
                 setIsAuthenticated(false);
                 setUser(null);
                 setLoading(false);
                 Cookies.remove("token");
+                throw error;
             }
-        }
+            return null; // Devuelve null al final para manejar el flujo completo
+        }               
         
         checkLogin();
     }, []);
@@ -105,6 +133,7 @@ export const AuthProvider = ({children}) => {
             user,
             isAuthenticated,
             errors,
+            clearUserFromLocalStorage,
         }}>
             {children}
         </AuthContext.Provider>

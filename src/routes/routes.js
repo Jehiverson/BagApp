@@ -8,8 +8,8 @@ import Home from '../pages/Home';
 import Opciones from '../pages/Opciones';
 import Register from '../pages/RegisterPage';
 import Login from '../pages/LoginPage';
+import HomePage from '../pages/Home/HomePage';
 import ProtectedRoute from '../ProtectedRoute';
-import LoginForm from '../pages/Home/HomePage';
 
 export default function Router() {
   const routes = useRoutes([
@@ -17,16 +17,16 @@ export default function Router() {
       path: '/dashboard',
       element: <DashboardLayout />,
       children: [
-        { path: 'home', element: <ProtectedRoute><Home /></ProtectedRoute> },
+        { path: 'home', element: <Home /> },
         { path: 'cliente', element: <Cliente /> },
-        { path: 'pago', element: <DashboardLayout><Pago /></DashboardLayout> },
-        { path: 'actividad', element: <DashboardLayout><Actividad /></DashboardLayout> },
-        { path: 'opcion', element: <DashboardLayout><Opciones /></DashboardLayout> },
+        { path: 'pago', element: <Pago /> },
+        { path: 'actividad', element: <Actividad /> },
+        { path: 'opcion', element: <Opciones /> },
       ],
     },
     {
       path: '/',
-      element: <LoginForm />,
+      element: <HomePage />,
     },
     {
       path: '*',

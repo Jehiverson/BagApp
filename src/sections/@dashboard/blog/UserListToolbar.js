@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { styled, alpha } from '@mui/material/styles';
 import { Toolbar, Tooltip, IconButton, Typography, OutlinedInput, InputAdornment } from '@mui/material';
 // component
-import { handleUpdateActivityStatus } from './api';
 import Iconify from '../../../components/iconify';
 
 // ----------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Avatar, Card, Table, Stack, Paper, Button, Checkbox, TableRow, MenuItem, TableBody, TableCell, Container, Typography, TableContainer, TablePagination, TextField, RadioGroup, Radio, FormControlLabel, IconButton, } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -12,18 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import { useAuth } from '../context/AuthContext';
+import { obtenerClientes, registrarCliente, actualizarCliente } from '../api/clienteApi';
 
-const TABLE_HEAD = [
-  { id: 'nameClient', label: 'Nombre', alignRight: false },
-  { id: 'apellidoClient', label: 'Apellido', alignRight: false },
-  { id: 'fechaNacimiento', label: 'Fecha de Nacimiento', alignRight: false},
-  { id: 'DPI', label: 'DPI', alignRight: false },
-  { id: 'estadoCivil', label: 'Estado Civil', alignRight: false },
-  { id: 'trabajando', label: 'Trabaja', alignRight: false },
-  { id: 'cantidadHijos', label: 'Cantidad de Hijos', alignRight: false },
-  { id: 'Editar', label: 'Editar', alignRight: false }, 
-];
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -53,7 +43,7 @@ function applySortFilter(array, comparator, query) {
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
 // Función para obtener la lista de clientes
 export const fetchClientes = (setClientes) => {
-  axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/cliente')
+  obtenerClientes()
     .then(response => {
       setClientes(response.data);
     })
@@ -67,7 +57,7 @@ export const handleDeleteSelected = async (selectedClients, clientes, setCliente
     const selectedIds = selectedClients.map(cliente => cliente.idCliente);
     // Enviar una petición DELETE para eliminar los registros
     await Promise.all(selectedIds.map(idCliente =>
-      axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/cliente/${idCliente}`)
+      axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/cliente/${idCliente}`)
     ));
 
     // Actualizar la lista de clientes después de eliminar
@@ -90,7 +80,10 @@ export default function UserPage() {
   const [orderBy, setOrderBy] = useState('nameClient');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const {user} = useAuth();
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const role = localStorageUser ? localStorageUser.tipoRol : null;
 
   const [clientes, setClientes] = useState([]);
   const [childrenGenders, setChildrenGenders] = useState([]);
@@ -112,6 +105,21 @@ export default function UserPage() {
     direccion: '',
     cantidadHijos: ''
   });
+  // Define el array de cabeceras de tabla
+  const TABLE_HEAD = [
+    { id: 'nameClient', label: 'Nombre', alignRight: false },
+    { id: 'apellidoClient', label: 'Apellido', alignRight: false },
+    { id: 'fechaNacimiento', label: 'Fecha de Nacimiento', alignRight: false},
+    { id: 'DPI', label: 'DPI', alignRight: false },
+    { id: 'estadoCivil', label: 'Estado Civil', alignRight: false },
+    { id: 'trabajando', label: 'Trabaja', alignRight: false },
+    { id: 'cantidadHijos', label: 'Cantidad de Hijos', alignRight: false },
+  ];
+
+  // Agrega la columna "Editar" solo si el rol es "Administrador"
+  if (role === 'Administrador') {
+    TABLE_HEAD.push({ id: 'Editar', label: 'Editar', alignRight: false });
+  }
   // onChange para Insertar Clientes
   const handleEstadoCivilChange = (event) => {
     setNewEvent(prevEvent => ({ ...prevEvent, estadoCivil: event.target.value }));
@@ -216,7 +224,7 @@ export default function UserPage() {
         requestData.childrenData = childrenData; // Agregar datos de los hijos al objeto de solicitud
       }
   
-      const response = await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/cliente', requestData);
+      const response = await registrarCliente(requestData);
   
       closeNewEventModal();
       setNewEvent({
@@ -256,9 +264,7 @@ export default function UserPage() {
   // Función para actualizar el cliente
   const updateEvent = async () => {
     try {
-      await axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/cliente/${seleccionar.idCliente}`, {
-        ...seleccionar,
-      });
+      await actualizarCliente(seleccionar.idCliente, seleccionar);
       handleCloseModal();
       // Actualizar la lista de clientes después de actualizar un evento
       fetchClientes(setClientes);
@@ -338,7 +344,7 @@ export default function UserPage() {
       </Helmet>
 
       <Container>
-        {user.tipoRol === 'Administrador' && (
+        {role === 'Administrador' && (
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
             Clientes
@@ -553,7 +559,7 @@ export default function UserPage() {
             Cancelar
           </Button>
         </ReactModal>
-        {user.tipoRol === 'Administrador' && (
+        {role === 'Administrador' || role === 'Usuario' ? (
           <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={deleteSelected} selected={selected} />
           <Scrollbar>
@@ -585,9 +591,11 @@ export default function UserPage() {
 
                     return (
                       <TableRow key={idCliente} hover tabIndex={-1} role="checkbox" selected={selectedUser}>
+                        {role === 'Administrador' ? (
                         <TableCell padding="checkbox">
                           <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, idCliente)} />
                         </TableCell>
+                        ) : null} 
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
                             <Avatar alt={nombreClient} />
@@ -600,11 +608,13 @@ export default function UserPage() {
                         <TableCell align="left">{estadoCivil}</TableCell>
                         <TableCell align="left">{trabajando}</TableCell>
                         <TableCell align="left">{cantidadHijos}</TableCell>
+                        {role === 'Administrador' ? (
                         <TableCell>
                           <IconButton onClick={() => handleOpenModal(row)}> {/* Agrega evento onClick */}
                             <EditIcon /> {/* Puedes usar un ícono de edición o similar */}
                           </IconButton>
                         </TableCell>
+                        ) : null}
                       </TableRow>
                     );
                   })}
@@ -646,7 +656,7 @@ export default function UserPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
-        )}
+        ) : null}
         {/* Modal para Actualizar Clientes */}
         <ReactModal
           isOpen={abrirModal}
@@ -780,11 +790,11 @@ export default function UserPage() {
             </Button>
           </div>
         </ReactModal>
-        {user.tipoRol === 'Usuario' && (
+        {role === 'Usuario' && (
           <div>
-            <Typography variant="h4" gutterBottom>Cliente</Typography>
             {targetClient && (
               <Card sx={{ padding: '16px' }}>
+                <Typography variant="h4" gutterBottom>Cliente</Typography>
                 <div>
                   <Typography variant="h4" gutterBottom>
                     {targetClient.idCliente}

@@ -26,8 +26,6 @@ const StyledAccount = styled('div')(({ theme }) => ({
   backgroundColor: alpha(theme.palette.grey[500], 0.12),
 }));
 
-// ----------------------------------------------------------------------
-
 Nav.propTypes = {
   openNav: PropTypes.bool,
   onCloseNav: PropTypes.func,
@@ -45,12 +43,27 @@ export default function Nav({ openNav, onCloseNav }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const role = localStorageUser ? localStorageUser.tipoRol : null;
+  // Obtén el rol del usuario del localStorage
+  const username = localStorageUser ? localStorageUser.username : user.username;
+
+  const allowedModulesByRole = {
+    Administrador: ['home', 'Clientes', 'Pagos', 'Actividades', 'Opciones'],
+    Cliente: ['home', 'Pagos', 'Actividades'],
+    Usuario: ['home', 'Clientes', 'Pagos', 'Actividades'],
+  };  
+
   const filteredNavConfig = navConfig.filter((option) => {
-    if (option.title === 'Opciones' && user.tipoRol !== 'Administrador') {
-      return false;
+    // Si el título está en la lista de módulos permitidos para el rol actual, muestra la opción
+    if (allowedModulesByRole[role]?.includes(option.title)) {
+      return true;
     }
-    return true;
-  })
+    // Oculta la opción si no está permitida
+    return false;
+  });   
 
   const renderContent = (
     <Scrollbar
@@ -70,11 +83,11 @@ export default function Nav({ openNav, onCloseNav }) {
 
             <Box sx={{ ml: 2 }}>
               <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
-                {account.displayName}
+                {username}
               </Typography>
 
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {account.role}
+                {role}
               </Typography>
             </Box>
           </StyledAccount>

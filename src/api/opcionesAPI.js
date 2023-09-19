@@ -6,5 +6,5 @@ export const actualizarRangoEdades = (idInicio, idFin) => {
 };
 
 export const cambiarActividad = (idActividadOrigen, idActividadDestino, idPago) => {
-    return axios.put(`/rango/${idActividadOrigen}/${idActividadDestino}`, { idPago });
+    return axios.put(`/actividad/cambio/${idActividadOrigen}/${idActividadDestino}`, { idPago });
 };

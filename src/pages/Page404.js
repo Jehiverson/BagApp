@@ -16,8 +16,6 @@ const StyledContent = styled('div')(({ theme }) => ({
   padding: theme.spacing(12, 0),
 }));
 
-// ----------------------------------------------------------------------
-
 export default function Page404() {
   return (
     <>

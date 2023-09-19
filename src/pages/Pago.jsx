@@ -62,12 +62,18 @@ export default function ProductsPage() {
   const [selected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const role = localStorageUser ? localStorageUser.tipoRol : null;
+
   const [showVoucher, setShowVoucher] = useState(false);
   const { register, handleSubmit, formState: {errors}, control, reset} = useForm();
   
   const onSubmit = handleSubmit(async (values) => {
     try {
       const idPago = uuidv4();
+      console.log('idPago:', idPago);
       const idActividad = values.actividad.value;
       values.idActividad = idActividad;
       delete values.actividad;
@@ -157,8 +163,9 @@ export default function ProductsPage() {
         <Typography variant="h4" sx={{ mb: 5 }}>
           Pagos
         </Typography>
-
-        <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white', marginBottom: '20px' }}>
+  
+        {role === 'Cliente' ? (
+          <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white', marginBottom: '20px' }}>
           <form 
             onSubmit={onSubmit}
             style={{ display: "flex", flexDirection: "column" }}
@@ -257,8 +264,10 @@ export default function ProductsPage() {
             <Button type="submit" variant='contained' color='primary'>Pagar</Button>
           </form>
         </Card>
+        )  : null}
 
-        <Card>
+        {role === 'Administrador' || role === 'Usuario' ? (
+          <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -344,6 +353,7 @@ export default function ProductsPage() {
             <PaymentsPDFGenerator pagoData={pagoData} />
           </div>
         </Card>
+        ) : null}
 
       </Container>
     </>

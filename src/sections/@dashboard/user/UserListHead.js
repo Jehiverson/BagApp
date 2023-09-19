@@ -40,10 +40,15 @@ export default function UserListHead({
     onRequestSort(event, property);
   };
 
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const role = localStorageUser ? localStorageUser.tipoRol : null;
+
   return (
     <TableHead>
       <TableRow>
-      {showCheckbox && ( // Verificamos showCheckbox antes de renderizar el checkbox
+      {showCheckbox && role === 'Administrador' && ( // Verificamos showCheckbox antes de renderizar el checkbox
           <TableCell padding="checkbox">
             <Checkbox
               indeterminate={numSelected > 0 && numSelected < rowCount}

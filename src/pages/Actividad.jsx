@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useForm, Controller } from 'react-hook-form';
 import { Helmet } from 'react-helmet-async';
 import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
@@ -14,11 +15,12 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Modal from 'react-modal';
 import Label from '../components/label';
 import { UserListToolbar } from '../sections/@dashboard/blog';
-import { handleUpdateActivityStatus } from '../sections/@dashboard/blog/api';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead } from '../sections/@dashboard/user';
 import Iconify from '../components/iconify';
 import ReportePDF from '../sections/@dashboard/blog/Reportes.pdf';
+import { obtenerActividades, obtenerHijos, actividadDatos, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
+import { obtenerClientes } from '../api/clienteApi';
 // Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
@@ -70,6 +72,13 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const {register, handleSubmit, control, reset} = useForm();
+
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const role = localStorageUser ? localStorageUser.tipoRol : null;
+
   const [cliente, setCliente] = useState('');
   const [dataReporte, setData] = useState([]);
   const [hijo, setHijo] = useState('');
@@ -81,13 +90,11 @@ export default function BlogPage() {
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newEvent, setNewEvent] = useState({
-    nombreActividad: '',
-    descripcionActividad: '',
     fechaEntrega: '',
-    estadoActividad: 'Pendiente',
     fechaInicio: '',
     fechaFinal: ''
   });
+
   const getRandomColor = () => {
     const colors = ['blue', 'green', 'red', 'orange', 'purple', 'pink', 'teal'];
     const randomIndex = Math.floor(Math.random() * colors.length);
@@ -95,7 +102,7 @@ export default function BlogPage() {
   };  
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/actividad');
+      const response = await obtenerActividades();
       const dataReporte = response.data;
       const filteredEvents = response.data.map(event => ({
         id: event.idActividad,
@@ -111,14 +118,13 @@ export default function BlogPage() {
       setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
       setactividadData(response.data);
       setData(dataReporte);
-      console.log('nombreClient en actividadData:', actividadData.map(item => item.cliente.nombreClient));
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };  
   const hijosDatos = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/bagapp-5a770/us-central1/app/hijo");
+      const response = await obtenerHijos();
       const dataHijo = response.data;
       setHijo(dataHijo);
     } catch (error) {
@@ -126,11 +132,10 @@ export default function BlogPage() {
       toast.error("Error al obtener los datos");
     }
   }
-
   useEffect(() => {
     async function getActividades() {
       try {
-        const response = await axios.get('http://localhost:5000/bagapp-5a770/us-central1/app/cliente');
+        const response = await obtenerClientes();
         const clienteData = response.data;
 
         const actividadesFormatted = clienteData.map(actividad => ({
@@ -152,42 +157,40 @@ export default function BlogPage() {
     getActividades();
     fetchEvents();
   }, []);
-  const handleActividadChange = (selectedOption) => {
-    setSelectedCliente(selectedOption);
-  };
 
-  const createEvent = async () => {
+  const onSubmit = handleSubmit(async (values) => {
     try {
       const formattedEvent = {
-        ...newEvent,
+        ...values,
         fechaEntrega: moment(newEvent.fechaEntrega).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
         fechaInicio: moment(newEvent.fechaInicio).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
         fechaFinal: moment(newEvent.fechaFinal).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
         idCliente: selectedCliente.value // Usar el valor seleccionado del cliente
       };
-  
-      await axios.post('http://localhost:5000/bagapp-5a770/us-central1/app/actividad', formattedEvent);
-      toast.success('Actividad creada con exito!');
+      await actividadDatos(formattedEvent);
+      toast.success('Actividad Creada');
       fetchEvents();
-      closeNewEventModal();
-      setNewEvent({
+      reset({
         nombreActividad: '',
         descripcionActividad: '',
-        fechaEntrega: '',
-        estadoActividad: 'Pendiente',
-        fechaInicio: '',
-        fechaFinal: ''
+        idCliente: '',
       });
-      setSelectedCliente(null);
+      setNewEvent({
+        fechaEntrega: '',
+        fechaInicio: '',
+        fechaFinal: '',
+      });
+      closeNewEventModal();
     } catch (error) {
       console.error('Error creating event:', error);
       toast.error('Error al crear la actividad');
     }
-  };   
+  });   
+
   const deleteEvent = async (id) => {
     try {
       console.log(id);
-      await axios.delete(`http://localhost:5000/bagapp-5a770/us-central1/app/actividad/${id}`);
+      await eliminarDato(id);
       fetchEvents();
       setSelectedEvent(null);
       toast.success('Actividad Eliminada');
@@ -196,6 +199,7 @@ export default function BlogPage() {
       toast.error('Error al eliminar la Actividad');
     }
   };
+  
   const updateActivityStatus = async () => {
     if (selected.length === 1) {
       const selectedId = selected[0];
@@ -210,6 +214,7 @@ export default function BlogPage() {
       }
     }
   };
+
   const updateEvent = () => {
     const eventData = {
       nombreActividad: selectedEvent.title,
@@ -220,7 +225,7 @@ export default function BlogPage() {
       idCliente: selectedCliente.value,
     };
     console.log("Datos:",eventData);
-    axios.put(`http://localhost:5000/bagapp-5a770/us-central1/app/actividad/${selectedEvent.id}`, eventData)
+    axios.put(`http://localhost:5000/bagapp-react/us-central1/app/actividad/${selectedEvent.id}`, eventData)
       .then((res) => {
         console.log(res);
         setSelectedEvent(null);
@@ -232,6 +237,10 @@ export default function BlogPage() {
         console.error(err);
       });
   };  
+
+  const handleActividadChange = (selectedOption) => {
+    setSelectedCliente(selectedOption);
+  };
   
   const openNewEventModal = () => {
     setNewEventModalOpen(true);
@@ -295,29 +304,33 @@ export default function BlogPage() {
           <Typography variant="h4" gutterBottom>
             Actividades
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={openNewEventModal}>
-            Nueva Actividad
-          </Button>
+          {role === 'Administrador' ? (
+            <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={openNewEventModal}>
+              Nueva Actividad
+            </Button>
+          ) : null}
         </Stack>
 
         <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 500 }}
-          onSelectEvent={selectEvent}
-          eventPropGetter={event => ({
-            style: {
-              backgroundColor: event.backgroundColor,
-            },
-          })}
-        />
-        <br />
-        <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
-          Listado de Actividades con Pago
-        </Typography>
-        <Card>
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 500 }}
+            onSelectEvent={selectEvent}
+            eventPropGetter={event => ({
+              style: {
+                backgroundColor: event.backgroundColor,
+              },
+            })}
+         />
+        {role === 'Administrador' ? (
+          <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
+            Listado de Actividades con Pago
+          </Typography>
+        ) : null} 
+        {role === 'Administrador' ? (
+          <Card>
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={updateActivityStatus} selected={selected}  />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -412,6 +425,7 @@ export default function BlogPage() {
             <ReportePDF dataReporte={dataReporte} hijo={hijo} />
           </div>
         </Card>
+        ) : null} 
 
         <Modal
           isOpen={isNewEventModalOpen}
@@ -422,94 +436,103 @@ export default function BlogPage() {
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
             },
             content: {
-              top: '50%',
-              left: '50%',
+              top: '80%',
+              left: '60%',
               transform: 'translate(-50%, -50%)',
               borderRadius: '8px',
               padding: '20px',
-              maxWidth: '600px',
+              maxWidth: '800px',
               margin: 'auto',
+              width: '80%', // Ajusta el ancho del modal
+              height: '65%', // Ajusta la altura del modal
             },
-          }}
+          }}          
         >
           {/* Contenido del modal */}
           <div>
-            <TextField
-              type="text"
-              label="Nombre de la Actividad"
-              value={newEvent.nombreActividad}
-              onChange={(e) => setNewEvent({ ...newEvent, nombreActividad: e.target.value })}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="text"
-              label="Descripción de la Actividad"
-              value={newEvent.descripcionActividad}
-              onChange={(e) => setNewEvent({ ...newEvent, descripcionActividad: e.target.value })}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Entrega</h6>
+            <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column" }}>
               <TextField
-                type="date"
-                value={newEvent.fechaEntrega}
-                onChange={(e) => setNewEvent({ ...newEvent, fechaEntrega: e.target.value })}
+                type="text"
+                label="Nombre de la Actividad"
+                {...register("nombreActividad")}
                 fullWidth
                 sx={{ marginBottom: 2 }}
               />
-            </div>
-            <TextField
-              type="text"
-              label="Estado"
-              value={newEvent.estadoActividad || "Pendiente"}
-              onChange={(e) => setNewEvent({ ...newEvent, estadoActividad: e.target.value })}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-              disabled
-              InputProps={{
-                disableUnderline: true,
-                style: { cursor: 'not-allowed' },
-              }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
               <TextField
-                type="date"
-                value={newEvent.fechaInicio}
-                onChange={(e) => setNewEvent({ ...newEvent, fechaInicio: e.target.value })}
-                fullWidth
-                sx={{ marginBottom: 0 }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Final</h6>
-              <TextField
-                type="date"
-                value={newEvent.fechaFinal}
-                onChange={(e) => setNewEvent({ ...newEvent, fechaFinal: e.target.value })}
+                type="text"
+                label="Descripción de la Actividad"
+                {...register("descripcionActividad")}
                 fullWidth
                 sx={{ marginBottom: 2 }}
               />
-            </div>
-            <h6 style={{ margin: '0', marginRight: '8px' }}>Cliente</h6>
-            <Select
-              value={selectedCliente}
-              onChange={handleActividadChange}
-              options={cliente}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            />
-            <br />
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Entrega</h6>
+                <TextField
+                  type="date"
+                  value={newEvent.fechaEntrega}
+                  onChange={(e) => setNewEvent({ ...newEvent, fechaEntrega: e.target.value })}
+                  fullWidth
+                  sx={{ marginBottom: 2 }}
+                />
+              </div>
+              <TextField
+                type="text"
+                value="Pendiente"
+                {...register("estadoActividad")}
+                fullWidth
+                sx={{ marginBottom: 2 }}
+                readOnly
+              />
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
+                <TextField
+                  type="date"
+                  value={newEvent.fechaInicio}
+                  onChange={(e) => setNewEvent({ ...newEvent, fechaInicio: e.target.value })}
+                  fullWidth
+                  sx={{ marginBottom: 0 }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0px' }}>
+                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Final</h6>
+                <TextField
+                  type="date"
+                  value={newEvent.fechaFinal}
+                  onChange={(e) => setNewEvent({ ...newEvent, fechaFinal: e.target.value })}
+                  fullWidth
+                  sx={{ marginBottom: 2 }}
+                />
+              </div>
+              <h6 style={{ margin: '0', marginRight: '5px' }}>Cliente</h6>
+              <Controller
+                name="idCliente" // Nombre del campo
+                control={control}
+                defaultValue={null} // Valor inicial (puede ser null u otra opción predeterminada)
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    sx={{ marginRight: 2 }}
+                    value={selectedCliente}
+                    onChange={(selectedOption) => {
+                      setSelectedCliente(selectedOption); // Actualizar el estado con la opción seleccionada
+                      field.onChange(selectedOption); // Actualizar el valor en React Hook Form
+                    }}
+                    options={cliente}
+                    isClearable
+                    placeholder="Seleccione un Cliente"
+                  />
+                )}
+              />
+              <div style={{display: "flex", marginTop: "10px"}}>
+                <Button type="submit" variant="contained" color="primary">
+                  Crear Evento
+                </Button>
+                <Button onClick={closeNewEventModal} variant="contained" style={{marginLeft: "20px"}}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
           </div>
-          {/* Botones */}
-          <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
-            Crear Evento
-          </Button>
-          <Button onClick={closeNewEventModal} variant="contained">
-            Cancelar
-          </Button>
         </Modal>
 
         {selectedEvent && (
@@ -623,11 +646,15 @@ export default function BlogPage() {
             ) : (
               selectedEvent.cliente
             )}</h3>
-            <Button onClick={() => deleteEvent(selectedEvent.id)}>Eliminar Evento</Button>
-            <Button onClick={() => setIsEditing(!isEditing)}>Actualizar Evento</Button>
-            {isEditing && (
-              <Button onClick={() => updateEvent(selectEvent.id)}>Guardar</Button>
-            )}
+            {role === 'Administrador' ? (
+              <div>
+                <Button onClick={() => deleteEvent(selectedEvent.id)}>Eliminar Evento</Button>
+                <Button onClick={() => setIsEditing(!isEditing)}>Actualizar Evento</Button>
+                {isEditing && (
+                  <Button onClick={() => updateEvent(selectEvent.id)}>Guardar</Button>
+                )}
+              </div>
+            ) : null} 
           </Modal>
         )}
       </Container>
