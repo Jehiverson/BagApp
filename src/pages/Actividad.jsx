@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useForm, Controller } from 'react-hook-form';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
+import { Button, Container, FormControlLabel, Radio, Stack, Typography, RadioGroup, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { sentenceCase } from 'change-case';
 import Select from 'react-select';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
+import {v4 as uuidv4} from 'uuid';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -21,6 +22,7 @@ import Iconify from '../components/iconify';
 import ReportePDF from '../sections/@dashboard/blog/Reportes.pdf';
 import { obtenerActividades, obtenerHijos, actividadDatos, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
 import { obtenerClientes } from '../api/clienteApi';
+import { actividadPago, pagarDatos } from '../api/pagoApi';
 // Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
@@ -72,7 +74,42 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const {register, handleSubmit, control, reset} = useForm();
+  const [showVoucher, setShowVoucher] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const {register, handleSubmit, formState: {errors}, control, reset} = useForm();
+
+  const pagarEvento = handleSubmit(async (field) => {
+    console.log(field);
+    try {
+      // Eliminar campos no deseados
+      delete field.nombreActividad;
+      delete field.descripcionActividad;
+      delete field.estadoActividad;
+  
+      const idPago = uuidv4();
+      const idActividad = field.idActividad; // Usar el idActividad existente en field
+      field.idPago = idPago;
+      console.log(field);
+      await pagarDatos(field);
+      await actividadPago(idActividad, idPago); // Enviar solo el idActividad
+      toast.success("Pago efectuado");
+      reset({
+        tipoPago: 'efectivo',
+        noVoucher: '',
+        nombre: '',
+        apellido: '',
+        fechaPago: new Date(),
+        actividad: null,
+        monto: '',
+        descripcion: '',
+        nit: '',
+      });
+    } catch (error) {
+      console.error("Error al pagar", error);
+      toast.error("Error al Pagar");
+    }
+  });  
 
   // Obtener el objeto de usuario desde localStorage
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
@@ -654,9 +691,118 @@ export default function BlogPage() {
                   <Button onClick={() => updateEvent(selectEvent.id)}>Guardar</Button>
                 )}
               </div>
-            ) : null} 
+            ) : null}
+            {role === 'Cliente' ? (
+              <div>
+                <Button variant='contained' onClick={() => setShowForm(!showForm)}>
+                  {showForm ? 'Cancelar Compra' : 'Comprar Boleto'}
+                </Button><br/>
+              </div>
+            ) : null}
+            {showForm && (
+              <form 
+                onSubmit={pagarEvento}
+                style={{ display: "flex", flexDirection: "column" }}
+              >
+                <Typography variant='h4'>Tipo de pago</Typography>
+                <Controller
+                  name="tipoPago"
+                  control={control}
+                  defaultValue="efectivo" // Establece el valor inicial deseado
+                  render={({ field }) => (
+                    <RadioGroup
+                      aria-label="payment-method"
+                      name="paymentMethod"
+                      value={field.value}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (e.target.value === 'voucher') {
+                          // Mostrar el TextField de Voucher si se selecciona 'voucher'
+                          setShowVoucher(true);
+                        } else {
+                          // Ocultar el TextField de Voucher si se selecciona 'efectivo'
+                          setShowVoucher(false);
+                        }
+                      }}
+                    >
+                      <div style={{display: "flex", marginTop: "15px", marginLeft: "20px"}}>
+                        <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
+                        <FormControlLabel value="voucher" control={<Radio />} label="Voucher" />
+                      </div>
+                    </RadioGroup>
+                  )}
+                />
+                {showVoucher && (
+                  <Controller
+                    name="noVoucher"
+                    control={control}
+                    defaultValue=""
+                    render={({field}) => (
+                      <TextField 
+                        type='text'
+                        label="Numero de Voucher"
+                        {...field}
+                        style={{marginRight: "20px", marginLeft: "20px", marginTop: "10px"}}
+                      />
+                    )}
+                  />
+                )}
+                <div style={{display: "flex"}}>
+                  <TextField type="text" {...register("nombre")} label="Nombre" style={{ marginBottom: "10px", marginLeft: "10px", marginTop: "10px"}} fullWidth />
+                  {errors.nombre && <p style={{color: "red"}}>Username is required</p>}
+                  <TextField type="text" {...register("apellido")} label="Apellido" style={{ marginBottom: "20px", marginLeft: "20px", marginTop: "10px" }} fullWidth />
+                  {errors.apellido && <p style={{color: "red"}}>Username is required</p>}
+                </div>
+                <div style={{ display: "flex" }}>
+                  {showVoucher && (
+                    <>
+                      <TextField
+                        type="date"
+                        {...register("fechaPago")}
+                        style={{ marginBottom: "10px", marginLeft: "10px", marginRight: "20px" }}
+                      />
+                      {errors.fechaPago && <p style={{ color: "red" }}>Date is required</p>}
+                    </>
+                  )}
+                  <TextField
+                    type="text"
+                    {...register("monto")}
+                    label="Monto"
+                    fullWidth
+                    sx={{ marginBottom: 2, marginLeft: 2 }}
+                  />
+                  {errors.monto && <p style={{ color: "red" }}>Monto is required</p>}
+                  <TextField
+                    type="text"
+                    {...register("idActividad")}
+                    sx={{ marginBottom: 2, marginLeft: 2 }}
+                    fullWidth
+                    value={selectedEvent.id}
+                  />
+                </div>
+                <TextField type="text" {...register("descripcion", { required: true })} label="Descripcion" fullWidth sx={{ marginBottom: 2 }} multiline />
+                {errors.descripcion && <p style={{color: "red"}}>Username is required</p>}
+                {showVoucher && (
+                  <Controller
+                    name="nit"
+                    control={control}
+                    defaultValue=""
+                    render={({field}) => (
+                      <TextField 
+                        type='text'
+                        label="NIT"
+                        {...field}
+                        style={{marginBottom: 20}}
+                      />
+                    )}
+                  />
+                )}
+                <Button type="submit" variant='contained' color='primary'>Pagar</Button>
+              </form>
+            )}
           </Modal>
         )}
+
       </Container>
     </>
   );
