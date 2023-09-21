@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useForm, Controller } from 'react-hook-form';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
+import { Button, Container, Stack, Typography, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { sentenceCase } from 'change-case';
-import Select from 'react-select';
-import moment from 'moment'; // Cambia la importación de moment
-import 'moment/locale/es'; // Importa el idioma si lo deseas
+import moment from 'moment';
+import 'moment/locale/es';
 import 'moment-timezone';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -19,9 +18,13 @@ import Scrollbar from '../components/scrollbar';
 import { UserListHead } from '../sections/@dashboard/user';
 import Iconify from '../components/iconify';
 import ReportePDF from '../sections/@dashboard/blog/Reportes.pdf';
-import { obtenerActividades, obtenerHijos, actividadDatos, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
+import { obtenerActividades, obtenerHijos, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
+import {FormCambioEvento} from '../components/formulario/formCambioEvento';
+import { FormPago } from '../components/formulario/formPago';
+import { FormActualizarEvento } from '../components/formulario/formActualizarEvento';
 import { obtenerClientes } from '../api/clienteApi';
-// Configura la zona horaria local
+import { FormIngresarActividad } from '../components/formulario/formIngresarActividad';
+
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
 
@@ -72,28 +75,20 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const {register, handleSubmit, control, reset} = useForm();
-
-  // Obtener el objeto de usuario desde localStorage
+  const [showForm, setShowForm] = useState(false);
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
-  // Extraer el valor de 'tipoRol' del objeto de usuario
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
-  const [cliente, setCliente] = useState('');
   const [dataReporte, setData] = useState([]);
   const [hijo, setHijo] = useState('');
-  const [selectedCliente, setSelectedCliente] = useState('');
   Modal.setAppElement('#root'); // Agrega esta línea
   const localizer = momentLocalizer(moment);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    fechaEntrega: '',
-    fechaInicio: '',
-    fechaFinal: ''
-  });
+  const [showActualizar, setShowActualizar] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [selectedCliente, setSelectedCliente] = useState(null);
 
   const getRandomColor = () => {
     const colors = ['blue', 'green', 'red', 'orange', 'purple', 'pink', 'teal'];
@@ -105,14 +100,14 @@ export default function BlogPage() {
       const response = await obtenerActividades();
       const dataReporte = response.data;
       const filteredEvents = response.data.map(event => ({
-        id: event.idActividad,
+        idActividad: event.idActividad,
         title: event.nombreActividad,
-        description: event.descripcionActividad,
-        entrega: event.fechaEntrega,
+        descripcionActividad: event.descripcionActividad,
+        fechaEntrega: event.fechaEntrega,
         estado: event.estadoActividad,
-        start: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(), // Convertir y ajustar a la zona horaria de Guatemala
-        end: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),   // Convertir y ajustar a la zona horaria de Guatemala
-        cliente: event.idCliente,
+        fechaInicio: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(), // Convertir y ajustar a la zona horaria de Guatemala
+        fechaFinal: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),   // Convertir y ajustar a la zona horaria de Guatemala
+        idCliente: event.idCliente,
         backgroundColor: getRandomColor(),
       }));
       setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
@@ -133,64 +128,25 @@ export default function BlogPage() {
     }
   }
   useEffect(() => {
-    async function getActividades() {
+    async function getClientes() {
       try {
         const response = await obtenerClientes();
         const clienteData = response.data;
-
-        const actividadesFormatted = clienteData.map(actividad => ({
-          value: actividad.idCliente,
-          label: actividad.nombreClient
-        }));
-
-        actividadesFormatted.unshift({
-          value: 0,
-          label: 'Seleccione un Cliente'
-        });
-
-        setCliente(actividadesFormatted);
+        setClientes(clienteData);
+        setSelectedCliente(clienteData[0]);
       } catch (error) {
         console.error('Error al obtener las actividades:', error);
       }
     }
-    hijosDatos()
-    getActividades();
+    hijosDatos();
+    getClientes();
     fetchEvents();
   }, []);
-
-  const onSubmit = handleSubmit(async (values) => {
+  // No Tocar ni eliminar
+  const deleteEvent = async (idActividad) => {
     try {
-      const formattedEvent = {
-        ...values,
-        fechaEntrega: moment(newEvent.fechaEntrega).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
-        fechaInicio: moment(newEvent.fechaInicio).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
-        fechaFinal: moment(newEvent.fechaFinal).add(1, 'day').startOf('day').format('YYYY-MM-DD'),
-        idCliente: selectedCliente.value // Usar el valor seleccionado del cliente
-      };
-      await actividadDatos(formattedEvent);
-      toast.success('Actividad Creada');
-      fetchEvents();
-      reset({
-        nombreActividad: '',
-        descripcionActividad: '',
-        idCliente: '',
-      });
-      setNewEvent({
-        fechaEntrega: '',
-        fechaInicio: '',
-        fechaFinal: '',
-      });
-      closeNewEventModal();
-    } catch (error) {
-      console.error('Error creating event:', error);
-      toast.error('Error al crear la actividad');
-    }
-  });   
-
-  const deleteEvent = async (id) => {
-    try {
-      console.log(id);
-      await eliminarDato(id);
+      console.log(idActividad);
+      await eliminarDato(idActividad);
       fetchEvents();
       setSelectedEvent(null);
       toast.success('Actividad Eliminada');
@@ -214,39 +170,9 @@ export default function BlogPage() {
       }
     }
   };
-
-  const updateEvent = () => {
-    const eventData = {
-      nombreActividad: selectedEvent.title,
-      descripcionActividad: selectedEvent.description,
-      fechaEntrega: moment(selectedEvent.entrega).format('YYYY-MM-DD'),
-      fechaInicio: moment(selectedEvent.start).startOf('day').toISOString(),
-      fechaFinal: moment(selectedEvent.end).startOf('day').toISOString(),
-      idCliente: selectedCliente.value,
-    };
-    console.log("Datos:",eventData);
-    axios.put(`http://localhost:5000/bagapp-react/us-central1/app/actividad/${selectedEvent.id}`, eventData)
-      .then((res) => {
-        console.log(res);
-        setSelectedEvent(null);
-        fetchEvents();
-        toast.success('Se actualizo la actividad correctamente');
-      })
-      .catch((err) => {
-        toast.error('Error al intentar actualizar mi actividad');
-        console.error(err);
-      });
-  };  
-
-  const handleActividadChange = (selectedOption) => {
-    setSelectedCliente(selectedOption);
-  };
   
   const openNewEventModal = () => {
-    setNewEventModalOpen(true);
-  };
-  const closeNewEventModal = () => {
-    setNewEventModalOpen(false);
+    setNewEventModalOpen(!isNewEventModalOpen);
   };
   const selectEvent = (event) => {
     setSelectedEvent(event);
@@ -314,8 +240,8 @@ export default function BlogPage() {
         <Calendar
             localizer={localizer}
             events={events}
-            startAccessor="start"
-            endAccessor="end"
+            startAccessor="fechaInicio"
+            endAccessor="fechaFinal"
             style={{ height: 500 }}
             onSelectEvent={selectEvent}
             eventPropGetter={event => ({
@@ -324,6 +250,21 @@ export default function BlogPage() {
               },
             })}
          />
+
+         <Card>
+          <div>
+            <FormIngresarActividad clientes={clientes} selectedCliente={selectedCliente} setSelectedCliente={setSelectedCliente} />
+          </div>
+         </Card>
+
+        {role === 'Cliente' ? (
+        <Card style={{marginTop: 20, height: 250, alignItems: 'center', p: 3, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', backgroundColor: 'white'}}>
+            <div style={{marginTop: 25}}>
+              <FormCambioEvento />
+            </div>
+        </Card>
+         ) : null} 
+
         {role === 'Administrador' ? (
           <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
             Listado de Actividades con Pago
@@ -427,114 +368,6 @@ export default function BlogPage() {
         </Card>
         ) : null} 
 
-        <Modal
-          isOpen={isNewEventModalOpen}
-          onRequestClose={closeNewEventModal}
-          style={{
-            overlay: {
-              zIndex: 1000,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-            content: {
-              top: '80%',
-              left: '60%',
-              transform: 'translate(-50%, -50%)',
-              borderRadius: '8px',
-              padding: '20px',
-              maxWidth: '800px',
-              margin: 'auto',
-              width: '80%', // Ajusta el ancho del modal
-              height: '65%', // Ajusta la altura del modal
-            },
-          }}          
-        >
-          {/* Contenido del modal */}
-          <div>
-            <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column" }}>
-              <TextField
-                type="text"
-                label="Nombre de la Actividad"
-                {...register("nombreActividad")}
-                fullWidth
-                sx={{ marginBottom: 2 }}
-              />
-              <TextField
-                type="text"
-                label="Descripción de la Actividad"
-                {...register("descripcionActividad")}
-                fullWidth
-                sx={{ marginBottom: 2 }}
-              />
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Entrega</h6>
-                <TextField
-                  type="date"
-                  value={newEvent.fechaEntrega}
-                  onChange={(e) => setNewEvent({ ...newEvent, fechaEntrega: e.target.value })}
-                  fullWidth
-                  sx={{ marginBottom: 2 }}
-                />
-              </div>
-              <TextField
-                type="text"
-                value="Pendiente"
-                {...register("estadoActividad")}
-                fullWidth
-                sx={{ marginBottom: 2 }}
-                readOnly
-              />
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
-                <TextField
-                  type="date"
-                  value={newEvent.fechaInicio}
-                  onChange={(e) => setNewEvent({ ...newEvent, fechaInicio: e.target.value })}
-                  fullWidth
-                  sx={{ marginBottom: 0 }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0px' }}>
-                <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Final</h6>
-                <TextField
-                  type="date"
-                  value={newEvent.fechaFinal}
-                  onChange={(e) => setNewEvent({ ...newEvent, fechaFinal: e.target.value })}
-                  fullWidth
-                  sx={{ marginBottom: 2 }}
-                />
-              </div>
-              <h6 style={{ margin: '0', marginRight: '5px' }}>Cliente</h6>
-              <Controller
-                name="idCliente" // Nombre del campo
-                control={control}
-                defaultValue={null} // Valor inicial (puede ser null u otra opción predeterminada)
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    sx={{ marginRight: 2 }}
-                    value={selectedCliente}
-                    onChange={(selectedOption) => {
-                      setSelectedCliente(selectedOption); // Actualizar el estado con la opción seleccionada
-                      field.onChange(selectedOption); // Actualizar el valor en React Hook Form
-                    }}
-                    options={cliente}
-                    isClearable
-                    placeholder="Seleccione un Cliente"
-                  />
-                )}
-              />
-              <div style={{display: "flex", marginTop: "10px"}}>
-                <Button type="submit" variant="contained" color="primary">
-                  Crear Evento
-                </Button>
-                <Button onClick={closeNewEventModal} variant="contained" style={{marginLeft: "20px"}}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </div>
-        </Modal>
-
         {selectedEvent && (
           <Modal 
             isOpen
@@ -550,113 +383,57 @@ export default function BlogPage() {
                 transform: 'translate(-50%, -50%)',
                 borderRadius: '8px',
                 padding: '20px',
-                maxWidth: '600px',
-                margin: 'auto',
+                maxWidth: '90%', // Cambia el valor de maxWidth a '90%'
+                width: 'auto', // Establece el ancho en automático
               },
             }}
           >
-            <h2>{isEditing ? (
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <h6 style={{ margin: '0', marginRight: '8px' }}>Nombre Actividad</h6>
-                <TextField
-                  value={selectedEvent.title}
-                  onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
-                  fullWidth
-                />
-              </div>
-            ) : (
-              selectedEvent.title
-            )}</h2>
-            <h3>{isEditing ? (
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <h6 style={{ margin: '0', marginRight: '8px' }}>Descripcion</h6>
-                <TextField
-                  value={selectedEvent.description}
-                  onChange={(e) => setSelectedEvent({ ...selectedEvent, description: e.target.value })}
-                  fullWidth
-                />
-              </div>
-            ) : (
-              selectedEvent.description
-            )}</h3>
-            <h3>
-              {isEditing ? (
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Entrega</h6>
-                  <TextField
-                    type="date"
-                    value={moment(selectedEvent.entrega).format('YYYY-MM-DD')}
-                    onChange={(e) => setSelectedEvent({ ...selectedEvent, entrega: e.target.value })}
-                    fullWidth
-                  />
-                </div>
-              ) : (
-                moment(selectedEvent.entrega).format('YYYY-MM-DD')
-              )}
-            </h3>
-            <h3>
-              {isEditing ? (
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
-                  <TextField
-                    type="date"
-                    value={moment(selectedEvent.start).format('YYYY-MM-DD')}
-                    onChange={(e) => setSelectedEvent({
-                        ...selectedEvent,
-                        start: moment(e.target.value).startOf('day').toISOString()
-                      })
-                    }
-                    fullWidth
-                  />
-                </div>
-              ) : (
-                moment(selectedEvent.start).format('YYYY-MM-DD')
-              )}
-            </h3>
-            <h3>
-              {isEditing ? (
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Final</h6>
-                  <TextField
-                    type="date"
-                    value={moment(selectedEvent.end).format('YYYY-MM-DD')}
-                    onChange={(e) => setSelectedEvent({
-                      ...selectedEvent,
-                      end: moment(e.target.value).startOf('day').toISOString()
-                    })
-                  }
-                    fullWidth
-                  />
-                </div>
-              ) : (
-                moment(selectedEvent.end).format('YYYY-MM-DD')
-              )}
-            </h3>
-            <h3>{isEditing ? (
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  <h6 style={{ margin: '0', marginRight: '8px' }}>Cliente</h6>
-                  <Select
-                    value={selectedCliente}
-                    onChange={handleActividadChange}
-                    options={cliente}
-                    fullWidth
-                    sx={{ marginBottom: 2 }}
-                  />
-                </div>
-            ) : (
-              selectedEvent.cliente
-            )}</h3>
             {role === 'Administrador' ? (
               <div>
-                <Button onClick={() => deleteEvent(selectedEvent.id)}>Eliminar Evento</Button>
-                <Button onClick={() => setIsEditing(!isEditing)}>Actualizar Evento</Button>
-                {isEditing && (
-                  <Button onClick={() => updateEvent(selectEvent.id)}>Guardar</Button>
-                )}
+              <div style={{marginTop: 15}}>
+                <Button
+                  variant='contained'
+                  color='info'
+                  onClick={() => setShowActualizar(!showActualizar)}
+                  startIcon={<EditIcon />}
+                  style={{marginRight: 15}}
+                >
+                  Actualizar Evento
+                </Button>
+                <Button
+                  variant='contained'
+                  color='error' // Color rojo
+                  onClick={() => deleteEvent(selectedEvent.idActividad)}
+                  startIcon={<DeleteIcon />} // Icono de basurero
+                >
+                  Eliminar Evento
+                </Button>
               </div>
-            ) : null} 
+              {showActualizar ? (
+                <div style={{marginTop: 15}}>
+                  <Typography variant='h6'>Actualizar Datos de la Actividad</Typography>
+                  <FormActualizarEvento selectedEvent={selectedEvent} />
+                </div>
+              ) : null}
+            </div>
+            ) : null}
+            {role === 'Cliente' ? (
+              <div>
+                <div style={{display: 'flex', flexDirection: 'column', marginBottom: 15}}>
+                  <Typography variant='h6'>{selectedEvent.title}</Typography>
+                  <Typography variant='h7'>{selectedEvent.descripcionActividad}</Typography>
+                </div>
+                <Button variant='contained' onClick={() => setShowForm(!showForm)}>
+                  {showForm ? 'Cancelar Compra' : 'Comprar Boleto'}
+                </Button><br/>
+              </div>
+            ) : null}
+            {showForm && (
+              <FormPago idActividad={selectedEvent.idActividad} />
+            )}
           </Modal>
         )}
+
       </Container>
     </>
   );

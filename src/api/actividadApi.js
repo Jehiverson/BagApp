@@ -29,4 +29,7 @@ export const handleUpdateActivityStatus = async (idActividad, newStatusObject, a
         console.error('Error al actualizar el estado de la actividad:', error);
     }
 };
-  
+
+export const actualizarActividad = (id, eventData) => {
+    return axios.put(`/actividad/${id}`, eventData)
+};

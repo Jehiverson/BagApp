@@ -87,7 +87,6 @@ export default function UserPage() {
 
   const [clientes, setClientes] = useState([]);
   const [childrenGenders, setChildrenGenders] = useState([]);
-  const targetClientId = 446;
   const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
@@ -197,13 +196,6 @@ export default function UserPage() {
   useEffect(() => {
     fetchClientes(setClientes);
   }, []);
-  // Función para buscar el cliente con el ID deseado
-  const findClientById = (clientId) => {
-    return clientes.find((cliente) => cliente.idCliente === clientId);
-  };
-  // Obtén el cliente con el ID deseado
-  const targetClient = findClientById(targetClientId);
-
   const createEvent = async () => {
     try {
       const clientId = Math.floor(Math.random() * 1000); // Genera un ID de cliente aleatorio
@@ -573,7 +565,6 @@ export default function UserPage() {
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAll}
-                  showCheckbox
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
@@ -591,11 +582,6 @@ export default function UserPage() {
 
                     return (
                       <TableRow key={idCliente} hover tabIndex={-1} role="checkbox" selected={selectedUser}>
-                        {role === 'Administrador' ? (
-                        <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, idCliente)} />
-                        </TableCell>
-                        ) : null} 
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
                             <Avatar alt={nombreClient} />
@@ -790,52 +776,6 @@ export default function UserPage() {
             </Button>
           </div>
         </ReactModal>
-        {role === 'Usuario' && (
-          <div>
-            {targetClient && (
-              <Card sx={{ padding: '16px' }}>
-                <Typography variant="h4" gutterBottom>Cliente</Typography>
-                <div>
-                  <Typography variant="h4" gutterBottom>
-                    {targetClient.idCliente}
-                  </Typography>
-                  <Typography variant="body1">
-                    Nombre del Cliente: {targetClient.nombreClient}
-                  </Typography>
-                  <Typography variant="body1">
-                    Apellido del Cliente: {targetClient.apellidoClient}
-                  </Typography>
-                  <Typography variant="body1">
-                    Fecha de Nacimiento: {targetClient.fechaNacimiento}
-                  </Typography>
-                  <Typography variant="body1">
-                    DPI: {targetClient.dpi}
-                  </Typography>
-                  <Typography variant="body1">
-                    Teléfono: {targetClient.telefono}
-                  </Typography>
-                  <Typography variant="body1">
-                    Género: {targetClient.genero}
-                  </Typography>
-                  <Typography variant="body1">
-                    Estado Civil: {targetClient.estadoCivil}
-                  </Typography>
-                  <Typography variant="body1">
-                    Trabajando: {targetClient.trabajando}
-                  </Typography>
-                  <Typography variant="body1">
-                    Ocupación: {targetClient.ocupacion}
-                  </Typography>
-                  <Typography variant="body1">
-                    Cantidad de Hijos: {targetClient.cantidadHijos}
-                  </Typography>
-                  {/* Agrega más líneas para mostrar otros datos del cliente */}
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
-
       </Container>
     </>
   );

@@ -5,6 +5,7 @@ import { obtenerActividades } from '../api/actividadApi';
 import { datosPagos } from '../api/pagoApi';
 import IngresosGenerados from '../components/Graphics/IngresosGenerados';
 import Actividades from '../components/Graphics/Actividades';
+import HomePageCliente from '../components/Diseños/Cliente';
 
 export default function PaginaDashboardApp() {
   const [datosActividades, setDatosActividades] = useState([]);
@@ -94,7 +95,9 @@ export default function PaginaDashboardApp() {
         </Card>
           ) : null}
           {role === 'Cliente' ? (
-            <div>Hola Cliente</div>
+            <div>
+              <HomePageCliente />
+            </div>
           ) : null}
           {role === 'Usuario' ? (
             <div>Hola Usuario</div>

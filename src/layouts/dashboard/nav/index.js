@@ -52,7 +52,7 @@ export default function Nav({ openNav, onCloseNav }) {
 
   const allowedModulesByRole = {
     Administrador: ['home', 'Clientes', 'Pagos', 'Actividades', 'Opciones'],
-    Cliente: ['home', 'Pagos', 'Actividades'],
+    Cliente: ['home', 'Actividades'],
     Usuario: ['home', 'Clientes', 'Pagos', 'Actividades'],
   };  
 

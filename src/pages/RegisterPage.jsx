@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField, Button, Card } from "@mui/material";
 import {useAuth} from "../context/AuthContext";
-import Fondo from '../assets/images/Fondo.jpg';
+import Fondo from '../assets/images/Fondo2.jpg';
 
 function RegisterPage() {
   const { register, handleSubmit, formState: {errors} } = useForm();
