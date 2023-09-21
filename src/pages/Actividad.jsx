@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
+import { Button, Container, Stack, Typography, TextField, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { sentenceCase } from 'change-case';
 import moment from 'moment';
 import 'moment/locale/es';
 import 'moment-timezone';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -23,8 +21,7 @@ import {FormCambioEvento} from '../components/formulario/formCambioEvento';
 import { FormPago } from '../components/formulario/formPago';
 import { FormActualizarEvento } from '../components/formulario/formActualizarEvento';
 import { obtenerClientes } from '../api/clienteApi';
-import { FormIngresarActividad } from '../components/formulario/formIngresarActividad';
-
+// Configura la zona horaria local
 moment.locale('es'); // Establece el idioma si lo deseas
 moment.tz.setDefault('America/Guatemala'); // Establece la zona horaria local
 
@@ -75,7 +72,9 @@ export default function BlogPage() {
   const [selected, setSelected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const [showForm, setShowForm] = useState(false);
+  const {register, handleSubmit, control, reset} = useForm();
+
+  // Obtener el objeto de usuario desde localStorage
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
@@ -427,10 +426,7 @@ export default function BlogPage() {
                   {showForm ? 'Cancelar Compra' : 'Comprar Boleto'}
                 </Button><br/>
               </div>
-            ) : null}
-            {showForm && (
-              <FormPago idActividad={selectedEvent.idActividad} />
-            )}
+            ) : null} 
           </Modal>
         )}
 
