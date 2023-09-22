@@ -7,16 +7,16 @@ import { obtenerPagos } from '../../api/pagoApi';
 const HomePageCliente = () => {
   const [actividadesPasadas, setActividadesPasadas] = useState([]);
   const [hoy] = useState(moment()); // Obtener la fecha actual
-  // Obtener el objeto de usuario desde localStorage
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
-  // Extraer el valor de 'tipoRol' del objeto de usuario
   const user = localStorageUser ? localStorageUser.username : null;
   const cliente = localStorageUser ? localStorageUser.idCliente : null;
   const [actividades, setActividades] = useState([]);
   const [pagos, setPagos] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false); // Nuevo estado para controlar la carga de datos
 
   useEffect(() => {
-    async function fetchData() {
+    // Función para obtener actividades
+    async function fetchActividades() {
       try {
         const responseActividades = await obtenerActividades();
         const actividadData = responseActividades.data;
@@ -25,26 +25,36 @@ const HomePageCliente = () => {
         console.error('Error al obtener las actividades:', error);
       }
     }
-  
-    async function pagosData() {
+
+    // Función para obtener pagos
+    async function fetchPagos() {
       try {
         const response = await obtenerPagos();
         const pagoData = response.data;
-  
-        // Filtra los pagos por el idCliente del usuario actual
+        console.log(pagoData);
+        console.log(pagoData);
         const pagosCliente = pagoData.filter((pago) => pago.idCliente === cliente);
-  
         setPagos(pagosCliente);
       } catch (error) {
         console.error('Error al obtener los pagos:', error);
       }
     }
-  
-    fetchData();
-    pagosData();
-  
+
+    // Verificar si los datos ya se cargaron antes de ejecutar las llamadas
+    if (!dataLoaded) {
+      fetchActividades();
+      fetchPagos();
+      setDataLoaded(true); // Marcar que los datos se han cargado
+    }
+
+    // Calcula las actividades pasadas y filtra las actividades
+    const actividadesFiltradas = actividades.filter((actividad) => {
+      const fechaEntrega = moment(actividad.fechaEntrega);
+      return fechaEntrega.isAfter(hoy);
+    });
+
     setActividadesPasadas(actividadesFiltradas);
-  }, [hoy, actividades, cliente]);  
+  }, [hoy, actividades, cliente, dataLoaded]);
 
   // Filtra los pagos del mes actual
   const pagosDelMes = pagos.filter((pago) => {
@@ -56,6 +66,18 @@ const HomePageCliente = () => {
     const fechaEntrega = moment(actividad.fechaEntrega);
     return fechaEntrega.isAfter(hoy);
   });
+
+  // Función para obtener actividades pasadas del mes actual
+  const obtenerActividadesPasadasDelMes = () => {
+    const actividadesPasadasDelMes = actividades.filter((actividad) => {
+      const fechaEntrega = moment(actividad.fechaEntrega);
+      return fechaEntrega.isBefore(hoy) && fechaEntrega.isSame(hoy, 'month');
+    });
+    return actividadesPasadasDelMes;
+  };
+
+  // Obtén las actividades pasadas del mes actual
+  const actividadesPasadasDelMes = obtenerActividadesPasadasDelMes();
 
   return (
     <Container maxWidth="lg">
@@ -115,8 +137,8 @@ const HomePageCliente = () => {
         <Grid item xs={12} md={6}>
           <Card elevation={3}>
             <CardContent>
-              <Typography variant="h6">Actividades Pasadas</Typography>
-              {actividadesPasadas.map((actividad, index) => (
+              <Typography variant="h6">Actividades Pasadas del Mes</Typography>
+              {actividadesPasadasDelMes.map((actividad, index) => (
                 <div
                   key={index}
                   style={{

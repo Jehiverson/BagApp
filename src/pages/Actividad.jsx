@@ -22,7 +22,6 @@ import { obtenerActividades, obtenerHijos, handleUpdateActivityStatus, eliminarD
 import {FormCambioEvento} from '../components/formulario/formCambioEvento';
 import { FormPago } from '../components/formulario/formPago';
 import { FormActualizarEvento } from '../components/formulario/formActualizarEvento';
-import { obtenerClientes } from '../api/clienteApi';
 import { FormIngresarActividad } from '../components/formulario/formIngresarActividad';
 
 moment.locale('es'); // Establece el idioma si lo deseas
@@ -85,10 +84,17 @@ export default function BlogPage() {
   const localizer = momentLocalizer(moment);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [showActualizar, setShowActualizar] = useState(false);
-  const [clientes, setClientes] = useState([]);
-  const [selectedCliente, setSelectedCliente] = useState(null);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openNewEventModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeNewEventModal = () => {
+    setIsModalOpen(false);
+  };
 
   const getRandomColor = () => {
     const colors = ['blue', 'green', 'red', 'orange', 'purple', 'pink', 'teal'];
@@ -128,18 +134,8 @@ export default function BlogPage() {
     }
   }
   useEffect(() => {
-    async function getClientes() {
-      try {
-        const response = await obtenerClientes();
-        const clienteData = response.data;
-        setClientes(clienteData);
-        setSelectedCliente(clienteData[0]);
-      } catch (error) {
-        console.error('Error al obtener las actividades:', error);
-      }
-    }
+
     hijosDatos();
-    getClientes();
     fetchEvents();
   }, []);
   // No Tocar ni eliminar
@@ -170,10 +166,7 @@ export default function BlogPage() {
       }
     }
   };
-  
-  const openNewEventModal = () => {
-    setNewEventModalOpen(!isNewEventModalOpen);
-  };
+
   const selectEvent = (event) => {
     setSelectedEvent(event);
   };
@@ -233,9 +226,35 @@ export default function BlogPage() {
           {role === 'Administrador' ? (
             <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={openNewEventModal}>
               Nueva Actividad
-            </Button>
+            </Button>    
           ) : null}
         </Stack>
+        <Modal
+          isOpen={isModalOpen}
+          onRequestClose={closeNewEventModal}
+          style={{
+            overlay: {
+              zIndex: 1000,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+            content: {
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '8px',
+              padding: '30px',
+              width: '90%', // Usar el 90% del ancho disponible
+              maxWidth: '750px', // Establecer un ancho máximo
+              maxHeight: '90vh', // Usar el 90% de la altura visible
+              overflow: 'auto', // Agregar desplazamiento si el contenido es demasiado largo
+            },
+          }}
+        >
+          <div className="modal-content">
+            <FormIngresarActividad />
+          </div>
+        </Modal>
 
         <Calendar
             localizer={localizer}
@@ -250,12 +269,6 @@ export default function BlogPage() {
               },
             })}
          />
-
-         <Card>
-          <div>
-            <FormIngresarActividad clientes={clientes} selectedCliente={selectedCliente} setSelectedCliente={setSelectedCliente} />
-          </div>
-         </Card>
 
         {role === 'Cliente' ? (
         <Card style={{marginTop: 20, height: 250, alignItems: 'center', p: 3, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', backgroundColor: 'white'}}>

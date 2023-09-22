@@ -1,8 +1,40 @@
-import React from "react";
-import { Typography, Card, CardContent } from "@mui/material";
-import { PieChart, Pie, Tooltip, Cell } from "recharts";
+import React, { useState, useEffect } from 'react';
+import { Typography, Card, CardContent } from '@mui/material';
+import { PieChart, Pie, Tooltip, Cell } from 'recharts';
+import { obtenerActividades } from '../../api/actividadApi';
 
-const Actividades = ({ datosActividades }) => {
+const Actividades = () => {
+  const [datosActividades, setDatosActividades] = useState([]);
+
+  // Llama a la API y formatea los datos al cargar el componente
+  useEffect(() => {
+    obtenerActividades()
+      .then((response) => {
+        const actividades = response.data;
+        const datosFormateados = actividades.map((actividad) => {
+          // Formatear fechas y calcular duración en días
+          const fechaInicio = new Date(actividad.fechaInicio);
+          fechaInicio.setHours(fechaInicio.getHours() - 6); // Ajuste de huso horario
+          const fechaFinal = new Date(actividad.fechaFinal);
+          fechaFinal.setHours(fechaFinal.getHours() - 6); // Ajuste de huso horario
+          const duracionMilisegundos = fechaFinal - fechaInicio;
+          // Asegurar que la duración sea al menos 1 día
+          const duracionDias = Math.max(
+            Math.ceil(duracionMilisegundos / (1000 * 60 * 60 * 24)),
+            1
+          );
+
+          return {
+            nombre: actividad.nombreActividad,
+            duracion: duracionDias,
+          };
+        });
+        setDatosActividades(datosFormateados);
+      })
+      .catch((error) => {
+        console.error('Error al obtener actividades', error);
+      });
+  }, []);
 
   const obtenerColor = (indice) => {
     const colores = [
@@ -23,7 +55,7 @@ const Actividades = ({ datosActividades }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div style={{ backgroundColor: "white", padding: "8px", border: "1px solid #ccc" }}>
+        <div style={{ backgroundColor: 'white', padding: '8px', border: '1px solid #ccc' }}>
           <p>{data.nombre}</p>
           <p>Duración: {data.duracion} días</p>
         </div>
