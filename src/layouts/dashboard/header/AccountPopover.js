@@ -1,31 +1,21 @@
 import { useState } from 'react';
-// @mui
+import { useNavigate } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import { Box, Divider, Typography, Stack, MenuItem, Avatar, IconButton, Popover } from '@mui/material';
-// mocks_
-import account from '../../../_mock/account';
 import LogoutButton from '../../../components/auth/LogoutButton';
 import { useAuth } from '../../../context/AuthContext';
+import account from '../../../_mock/account';
 
 const MENU_OPTIONS = [
   {
     label: 'Home',
     icon: 'eva:home-fill',
   },
-  {
-    label: 'Profile',
-    icon: 'eva:person-fill',
-  },
-  {
-    label: 'Settings',
-    icon: 'eva:settings-2-fill',
-  },
 ];
-
-// ----------------------------------------------------------------------
 
 export default function AccountPopover() {
   const [open, setOpen] = useState(null);
+  const navigate = useNavigate(); // Obtiene la función navigate
 
   const handleOpen = (event) => {
     setOpen(event.currentTarget);
@@ -34,10 +24,17 @@ export default function AccountPopover() {
   const handleClose = () => {
     setOpen(null);
   };
+
   const { user } = useAuth();
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const username = localStorageUser ? localStorageUser.username : user.username;
   const email = localStorageUser ? localStorageUser.email : user.email;
+
+  // Función para manejar la redirección al hacer clic en "Home"
+  const handleHomeClick = () => {
+    navigate('/dashboard/home'); // Redirige a la página de inicio
+    handleClose(); // Cierra el menú después de redirigir
+  };
 
   return (
     <>
@@ -93,7 +90,7 @@ export default function AccountPopover() {
 
         <Stack sx={{ p: 1 }}>
           {MENU_OPTIONS.map((option) => (
-            <MenuItem key={option.label} onClick={handleClose}>
+            <MenuItem key={option.label} onClick={handleHomeClick}>
               {option.label}
             </MenuItem>
           ))}

@@ -7,6 +7,10 @@ import { es } from 'date-fns/locale';
 
 const PaymentsPDFGenerator = ({ pagoData }) => {
   const [modalOpen, setModalOpen] = useState(false);
+  // Obtener el objeto de usuario desde localStorage
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  // Extraer el valor de 'tipoRol' del objeto de usuario
+  const username = localStorageUser ? localStorageUser.username : null;
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
     fechaFinal: '',
@@ -57,7 +61,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
     doc.text(monthRangeText, 10, 40);
 
     // Agregar Nombre y Apellido
-    const nameAndLastName = `Nombre: _______________________________ Apellido: _______________________________`;
+    const nameAndLastName = `Nombre: ${username}`;
     doc.text(nameAndLastName, 10, 50);
 
     const tableData = filteredPayments.map((pago) => [

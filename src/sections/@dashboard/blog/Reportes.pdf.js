@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Modal, Paper, TextField, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { parseISO } from 'date-fns';
 import logo from './pdf/logo_pdf.png';
+import {datosPagos} from '../../../api/pagoApi';
 
 function calcularEdad(fechaNacimiento) {
   const fechaNacimientoDate = new Date(fechaNacimiento);
@@ -13,42 +15,44 @@ function calcularEdad(fechaNacimiento) {
   return Math.abs(edad.getUTCFullYear() - 1970);
 }
 
-const ReportePDF = ({ dataReporte, hijo }) => {
+const ReportePDF = ({ idActividad }) => {
+  const [actividad, setActividad] = useState([]);
+
+  const obtenerActividad = async () => {
+    try {
+      const response = await datosPagos();
+
+      if (Array.isArray(response.data)) {
+        // Filtrar los registros por 'idActividad' que coincida con alguno en 'idActividad'
+        const registrosFiltrados = response.data.filter((registro) => idActividad.includes(registro.idActividad));
+        setActividad(registrosFiltrados);
+      } else {
+        console.log('No se encontraron registros válidos');
+        setActividad([]);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    obtenerActividad ();
+  }, [idActividad]);
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    fechaInicio: '',
-    fechaFinal: '',
-    filtroEstado: 'todos',
-  });
 
   const getTitle = () => 'BANCO DE ALIMENTOS DE GUATEMALA - BASE DE DATOS DE BENEFICIARIOS';
   const getTitulo = () => {
-    const nombreOrganizacion = 'Nombre de la Organización:____________';
-    const lugarEntrega = 'Lugar de entrega:________________manz 21 lote 8 sec, 2 Tierra Nueva 1';
-    const responsabilidadProyecto = 'Responsabilidad del Proyecto:_________';
+    const nombreActividad = actividad.length > 0 ? actividad[0].nombreActividad : '';
+    const nombreOrganizacion = `Nombre de la Organización: ${nombreActividad}`;
+    const lugarEntrega = 'Lugar de entrega: manz 21 lote 8 sec, 2 Tierra Nueva 1';
+    const responsabilidadProyecto = 'Responsabilidad del Proyecto: Kingo Energy';
 
     return `${nombreOrganizacion}          Fecha entrega:          ${lugarEntrega}          ${responsabilidadProyecto}`;
   };
 
   const handleGeneratePDF = () => {
+    console.log(actividad);
     try {
-      const { fechaInicio, fechaFinal, filtroEstado } = newEvent;
-
-      let filteredActivities = [...dataReporte];
-
-      if (filtroEstado === 'Completa') {
-        filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Completa');
-      } else if (filtroEstado === 'Pendiente') {
-        filteredActivities = filteredActivities.filter((actividad) => actividad.estadoActividad === 'Pendiente');
-      }
-
-      const startDate = parseISO(`${fechaInicio}T00:00:00.000-06:00`);
-      const endDate = parseISO(`${fechaFinal}T23:59:59Z`);
-
-      filteredActivities = filteredActivities.filter(
-        (actividad) => parseISO(actividad.fechaEntrega) >= startDate && parseISO(actividad.fechaEntrega) <= endDate
-      );
-
       const doc = new jsPDF('landscape');
 
       // Marca de agua
@@ -121,70 +125,74 @@ const ReportePDF = ({ dataReporte, hijo }) => {
           '',
           '',
         ],
-      ]; 
-      const tableData = filteredActivities.map((actividad) => {
+      ];
+
+      const tableData = Array.isArray(actividad) ? actividad.map((actividad) => {
         const clienteInfo = actividad.cliente; 
-        const birthDate = new Date(clienteInfo.fechaNacimiento);
-        const age = currentDate.getFullYear() - birthDate.getFullYear();
-        const formattedAge = Number.isNaN(age) ? '' : age.toString();
-
-        const clienteId = actividad.idCliente; // Obtiene el idCliente de la actividad
-        const clienteHijos = hijo.filter((h) => h.idCliente === clienteId); // Filtra los hijos que pertenecen al mismo cliente
-        // Inicializa contadores para cada categoría
-        const categorias = {
-          '0-2 años Hombre': 0,
-          '0-2 años Mujer': 0,
-          '3-5 años Hombre': 0,
-          '3-5 años Mujer': 0,
-          '6-18 años Hombre': 0,
-          '6-18 años Mujer': 0,
-          '19-49 años Hombre': 0,
-          '19-49 años Mujer': 0,
-          '50+ años Hombre': 0,
-          '50+ años Mujer': 0,
-        };
-        // Recorre los hijos del cliente y actualiza las categorías
-        clienteHijos.forEach((hijo) => {
-          const edadHijo = calcularEdad(hijo.edad);
-          const generoHijo = hijo.genero;
-
-          if (edadHijo >= 0 && edadHijo <= 2) {
-            categorias[generoHijo === 'Hombre' ? '0-2 años Hombre' : '0-2 años Mujer'] += 1;
-          } else if (edadHijo >= 3 && edadHijo <= 5) {
-            categorias[generoHijo === 'Hombre' ? '3-5 años Hombre' : '3-5 años Mujer'] += 1;
-          } else if (edadHijo >= 6 && edadHijo <= 18) {
-            categorias[generoHijo === 'Hombre' ? '6-18 años Hombre' : '6-18 años Mujer'] += 1;
-          } else if (edadHijo >= 19 && edadHijo <= 49) {
-            categorias[generoHijo === 'Hombre' ? '19-49 años Hombre' : '19-49 años Mujer'] += 1;
-          } else {
-            categorias[generoHijo === 'Hombre' ? '50+ años Hombre' : '50+ años Mujer'] += 1;
-          }
-        });
+        if (clienteInfo) {
+          const birthDate = new Date(clienteInfo.fechaNacimiento);
+          const age = currentDate.getFullYear() - birthDate.getFullYear();
+          const formattedAge = Number.isNaN(age) ? '' : age.toString();
       
-        return [
-          actividad.idActividad,
-          `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
-          clienteInfo.dpi,
-          clienteInfo.telefono,
-          clienteInfo.genero,
-          formattedAge,
-          clienteInfo.estadoCivil,
-          clienteInfo.ocupacion,
-          clienteInfo.trabajando,
-          categorias['0-2 años Hombre'],
-          categorias['0-2 años Mujer'],
-          categorias['3-5 años Hombre'],
-          categorias['3-5 años Mujer'],
-          categorias['6-18 años Hombre'],
-          categorias['6-18 años Mujer'],
-          categorias['19-49 años Hombre'],
-          categorias['19-49 años Mujer'],
-          categorias['50+ años Hombre'],
-          categorias['50+ años Mujer'],
-          clienteInfo.cantidadHijos,
-          clienteInfo.direccion
-        ];
-      });
+          const clienteHijos = clienteInfo.hijos || [];
+          // Inicializa contadores para cada categoría
+          const categorias = {
+            '0-2 años Hombre': 0,
+            '0-2 años Mujer': 0,
+            '3-5 años Hombre': 0,
+            '3-5 años Mujer': 0,
+            '6-18 años Hombre': 0,
+            '6-18 años Mujer': 0,
+            '19-49 años Hombre': 0,
+            '19-49 años Mujer': 0,
+            '50+ años Hombre': 0,
+            '50+ años Mujer': 0,
+          };
+          // Recorre los hijos del cliente y actualiza las categorías
+          clienteHijos.forEach((hijo) => {
+            const edadHijo = calcularEdad(hijo.edad);
+            const generoHijo = hijo.genero;
+      
+            if (edadHijo >= 0 && edadHijo <= 2) {
+              categorias[generoHijo === 'Hombre' ? '0-2 años Hombre' : '0-2 años Mujer'] += 1;
+            } else if (edadHijo >= 3 && edadHijo <= 5) {
+              categorias[generoHijo === 'Hombre' ? '3-5 años Hombre' : '3-5 años Mujer'] += 1;
+            } else if (edadHijo >= 6 && edadHijo <= 18) {
+              categorias[generoHijo === 'Hombre' ? '6-18 años Hombre' : '6-18 años Mujer'] += 1;
+            } else if (edadHijo >= 19 && edadHijo <= 49) {
+              categorias[generoHijo === 'Hombre' ? '19-49 años Hombre' : '19-49 años Mujer'] += 1;
+            } else {
+              categorias[generoHijo === 'Hombre' ? '50+ años Hombre' : '50+ años Mujer'] += 1;
+            }
+          });
+        
+          return [
+            actividad.idActividad,
+            `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
+            clienteInfo.dpi,
+            clienteInfo.telefono,
+            clienteInfo.genero,
+            formattedAge,
+            clienteInfo.estadoCivil,
+            clienteInfo.ocupacion,
+            clienteInfo.trabajando,
+            categorias['0-2 años Hombre'],
+            categorias['0-2 años Mujer'],
+            categorias['3-5 años Hombre'],
+            categorias['3-5 años Mujer'],
+            categorias['6-18 años Hombre'],
+            categorias['6-18 años Mujer'],
+            categorias['19-49 años Hombre'],
+            categorias['19-49 años Mujer'],
+            categorias['50+ años Hombre'],
+            categorias['50+ años Mujer'],
+            clienteInfo.cantidadHijos,
+            clienteInfo.direccion
+          ];
+        }
+        // Devuelve un valor vacío o null, según tus necesidades
+        return null;
+      }).filter((value) => value !== null) : [];      
 
       const tableOptions = {
         margin: { top: watermarkY + watermarkHeight + 30 },
@@ -234,47 +242,12 @@ const ReportePDF = ({ dataReporte, hijo }) => {
 
   return (
     <div>
-      <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={() => setModalOpen(true)}>
+      <Button variant="contained" color="secondary" size="small" startIcon={<CloudDownloadOutlinedIcon />} sx={{ mt: 2 }} onClick={() => setModalOpen(true)}>
         Generar PDF
       </Button>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
         <Paper sx={{ p: 2, width: 400, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Inicio</h6>
-            <TextField
-              type="date"
-              value={newEvent.fechaInicio}
-              onChange={(e) => setNewEvent({ ...newEvent, fechaInicio: e.target.value })}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Final</h6>
-            <TextField
-              type="date"
-              value={newEvent.fechaFinal}
-              onChange={(e) => setNewEvent({ ...newEvent, fechaFinal: e.target.value })}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            />
-          </div>
-          <RadioGroup
-            aria-label="Filtro Estado"
-            name="filtroEstado"
-            value={newEvent.filtroEstado}
-            onChange={(e) => setNewEvent({ ...newEvent, filtroEstado: e.target.value })}
-            row
-            sx={{ marginBottom: 2 }}
-          >
-            <FormControlLabel value="todos" control={<Radio />} label="Todos" />
-            <FormControlLabel value="Completa" control={<Radio />} label="Completa" />
-            <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
-          </RadioGroup>
           <Button variant="contained" color="primary" onClick={handleGeneratePDF}>
             Generar PDF
           </Button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Button, Container, Stack, Typography, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import Grid from '@mui/material/Grid';
 import { sentenceCase } from 'change-case';
 import moment from 'moment';
 import 'moment/locale/es';
@@ -17,8 +18,7 @@ import { UserListToolbar } from '../sections/@dashboard/blog';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead } from '../sections/@dashboard/user';
 import Iconify from '../components/iconify';
-import ReportePDF from '../sections/@dashboard/blog/Reportes.pdf';
-import { obtenerActividades, obtenerHijos, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
+import { obtenerActividades, handleUpdateActivityStatus, eliminarDato } from '../api/actividadApi';
 import {FormCambioEvento} from '../components/formulario/formCambioEvento';
 import { FormPago } from '../components/formulario/formPago';
 import { FormActualizarEvento } from '../components/formulario/formActualizarEvento';
@@ -77,11 +77,19 @@ export default function BlogPage() {
   const [showForm, setShowForm] = useState(false);
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const role = localStorageUser ? localStorageUser.tipoRol : null;
+  const [apiCalled, setApiCalled] = useState(false);
 
-  const [dataReporte, setData] = useState([]);
-  const [hijo, setHijo] = useState('');
-  Modal.setAppElement('#root'); // Agrega esta línea
+  Modal.setAppElement('#root');
   const localizer = momentLocalizer(moment);
+  const messages = {
+    today: 'Hoy',
+    next: 'Siguiente',
+    previous: 'Regresar',
+    month: 'Mes',
+    week: 'Semana',
+    day: 'Día',
+    agenda: 'Agenda',
+  };
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showActualizar, setShowActualizar] = useState(false);
@@ -104,40 +112,41 @@ export default function BlogPage() {
   const fetchEvents = async () => {
     try {
       const response = await obtenerActividades();
-      const dataReporte = response.data;
-      const filteredEvents = response.data.map(event => ({
-        idActividad: event.idActividad,
-        title: event.nombreActividad,
-        descripcionActividad: event.descripcionActividad,
-        fechaEntrega: event.fechaEntrega,
-        estado: event.estadoActividad,
-        fechaInicio: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(), // Convertir y ajustar a la zona horaria de Guatemala
-        fechaFinal: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),   // Convertir y ajustar a la zona horaria de Guatemala
-        idCliente: event.idCliente,
-        backgroundColor: getRandomColor(),
-      }));
-      setEvents(filteredEvents); // Agregar esta línea para actualizar los eventos en el estado
+      const filteredEvents = response.data
+        .filter((event) => {
+          if (role === 'Administrador' || role === 'Usuario') {
+            return true; // Mostrar todas las actividades para el rol de Administrador
+          }
+          if (role === 'Cliente') {
+            const currentDate = moment().tz('America/Guatemala');
+            const endDate = moment.utc(event.fechaFinal).tz('America/Guatemala');
+            return endDate.isAfter(currentDate);
+          }
+          return false;
+        })
+        .map((event) => ({
+          idActividad: event.idActividad,
+          title: event.nombreActividad,
+          descripcionActividad: event.descripcionActividad,
+          fechaEntrega: event.fechaEntrega,
+          estado: event.estadoActividad,
+          fechaInicio: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(),
+          fechaFinal: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),
+          idCliente: event.idCliente,
+          backgroundColor: getRandomColor(),
+        }));
+      setEvents(filteredEvents);
       setactividadData(response.data);
-      setData(dataReporte);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
-  };  
-  const hijosDatos = async () => {
-    try {
-      const response = await obtenerHijos();
-      const dataHijo = response.data;
-      setHijo(dataHijo);
-    } catch (error) {
-      console.error("Error al pasar los datos", error);
-      toast.error("Error al obtener los datos");
-    }
-  }
+  };
   useEffect(() => {
-
-    hijosDatos();
-    fetchEvents();
-  }, []);
+    if (!apiCalled) {
+      fetchEvents();
+      setApiCalled(true);
+    }
+  }, [apiCalled]);
   // No Tocar ni eliminar
   const deleteEvent = async (idActividad) => {
     try {
@@ -175,7 +184,7 @@ export default function BlogPage() {
       setOrder(isAsc ? 'desc' : 'asc');
       setOrderBy(property);
   };
-  const handleSelectAll = (event, idActividad) => {
+  const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelected(actividadData.map((actividadData) => actividadData.idActividad));
     } else {
@@ -257,27 +266,27 @@ export default function BlogPage() {
         </Modal>
 
         <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor="fechaInicio"
-            endAccessor="fechaFinal"
-            style={{ height: 500 }}
-            onSelectEvent={selectEvent}
-            eventPropGetter={event => ({
-              style: {
-                backgroundColor: event.backgroundColor,
-              },
-            })}
+              localizer={localizer}
+              events={events}
+              messages={messages}
+              startAccessor="fechaInicio"
+              endAccessor="fechaFinal"
+              style={{ height: 500 }}
+              onSelectEvent={selectEvent}
+              eventPropGetter={event => ({
+                style: {
+                  backgroundColor: event.backgroundColor,
+                },
+              })}
          />
 
-        {role === 'Cliente' ? (
+        {role === 'Administrador' ? (
         <Card style={{marginTop: 20, height: 250, alignItems: 'center', p: 3, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', backgroundColor: 'white'}}>
             <div style={{marginTop: 25}}>
               <FormCambioEvento />
             </div>
         </Card>
          ) : null} 
-
         {role === 'Administrador' ? (
           <Typography variant="h4" gutterBottom style={{ margin: '10px' }}>
             Listado de Actividades con Pago
@@ -375,9 +384,6 @@ export default function BlogPage() {
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-          <div style={{ display: 'flex', justifyContent: 'left', alignItems: 'center', marginLeft: '15px', marginBottom: '20px' }}>
-            <ReportePDF dataReporte={dataReporte} hijo={hijo} />
-          </div>
         </Card>
         ) : null} 
 
@@ -425,20 +431,39 @@ export default function BlogPage() {
               {showActualizar ? (
                 <div style={{marginTop: 15}}>
                   <Typography variant='h6'>Actualizar Datos de la Actividad</Typography>
-                  <FormActualizarEvento selectedEvent={selectedEvent} />
+                  <FormActualizarEvento selectedEvent={selectedEvent} setSelectedEvent={setSelectedEvent} fetchEvents={fetchEvents} />
                 </div>
               ) : null}
             </div>
             ) : null}
-            {role === 'Cliente' ? (
+            {role === 'Cliente' || role === 'Usuario' ? (
               <div>
-                <div style={{display: 'flex', flexDirection: 'column', marginBottom: 15}}>
-                  <Typography variant='h6'>{selectedEvent.title}</Typography>
-                  <Typography variant='h7'>{selectedEvent.descripcionActividad}</Typography>
-                </div>
-                <Button variant='contained' onClick={() => setShowForm(!showForm)}>
-                  {showForm ? 'Cancelar Compra' : 'Comprar Boleto'}
-                </Button><br/>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                    <Paper elevation={3} style={{ padding: '16px', background: '#f5f5f5' }}>
+                      <Typography variant='h6' style={{ color: '#333', marginBottom: '8px' }}>
+                        {selectedEvent.title}
+                      </Typography>
+                      <Typography variant='body1' style={{ color: '#555' }}>
+                        {selectedEvent.descripcionActividad}
+                      </Typography>
+                      <Typography variant='body1' style={{ color: '#555' }}>
+                      <span style={{ fontWeight: 'bold' }}>Este: </span>{convertirFechaAC(selectedEvent.fechaEntrega)}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  {role === 'Cliente' ? (
+                    <Grid item xs={12}>
+                      <Button
+                        variant='contained'
+                        color='primary' // Color primario de Material-UI
+                        onClick={() => setShowForm(!showForm)}
+                      >
+                        {showForm ? 'Cancelar Compra' : 'Comprar Boleto'}
+                      </Button>
+                    </Grid>
+                  ) : null} 
+                </Grid>
               </div>
             ) : null}
             {showForm && (
@@ -450,4 +475,10 @@ export default function BlogPage() {
       </Container>
     </>
   );
+  // Función para convertir una fecha UTC a la fecha local de América Central
+  function convertirFechaAC(fechaUTC) {
+    const fechaLocal = new Date(fechaUTC);
+    const options = { timeZone: 'America/El_Salvador', year: 'numeric', month: 'numeric', day: 'numeric' };
+    return fechaLocal.toLocaleString(undefined, options);
+  }
 }

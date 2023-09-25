@@ -4,56 +4,77 @@ import Select from 'react-select';
 import moment from 'moment';
 import { useForm, Controller } from 'react-hook-form';
 import SendIcon from '@mui/icons-material/Send';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { obtenerClientes } from '../../api/clienteApi';
+import { actualizarActividad } from '../../api/actividadApi';
 
-export const FormActualizarEvento = ({ selectedEvent }) => {
+export const FormActualizarEvento = ({ selectedEvent, setSelectedEvent, fetchEvents }) => {
   const { register, handleSubmit, formState: { errors }, control, reset, setValue } = useForm();
-  const [cliente, setCliente] = useState('');
-  const [selectedClienteCambio, setSelectedClienteCambio] = useState(null); // Cambia a null para manejar el objeto completo
+  const [clienteOptions, setClienteOptions] = useState([]);
+  const [selectedClienteCambio, setSelectedClienteCambio] = useState(null);
+  const [datosCargados, setDatosCargados] = useState(false);
+
+  // Mueve la función cargarDatosClientes fuera del useEffect
+  const cargarDatosClientes = async () => {
+    try {
+      const response = await obtenerClientes();
+      const pagoData = response.data;
+      const clienteFormato = pagoData.map(cliente => ({
+        value: cliente.idCliente,
+        label: cliente.nombreClient,
+      }));
+
+      clienteFormato.unshift({
+        value: 0,
+        label: 'Seleccione un Cliente',
+      });
+
+      setClienteOptions(clienteFormato);
+
+      const clienteSeleccionado = clienteFormato.find(cliente => cliente.value === selectedEvent.idCliente);
+
+      if (clienteSeleccionado) {
+        setSelectedClienteCambio(clienteSeleccionado);
+      }
+
+      setDatosCargados(true);
+    } catch (error) {
+      console.error('Error al obtener los datos de Pagos', error);
+    }
+  };
 
   const onSubmit = handleSubmit(async (values) => {
-    console.log(values);
-    reset();
+    values.fechaInicio = moment(values.fechaInicio).add(1, 'day').format('YYYY-MM-DD');
+    values.fechaEntrega = moment(values.fechaEntrega).add(1, 'day').format('YYYY-MM-DD');
+    values.fechaFinal = moment(values.fechaFinal).add(1, 'day').format('YYYY-MM-DD');
+    const idActividad = selectedEvent.idActividad;
+    try {
+      await actualizarActividad(idActividad, values);
+      toast.success("Se actualizó la actividad correctamente");
+      setSelectedEvent(null);
+      fetchEvents();
+    } catch (error) {
+      toast.error("Error al actualizar la actividad");
+      console.log({ message: "No se pudo actualizar", error });
+    }
   });
 
   useEffect(() => {
-    // Establecer los valores iniciales de los campos del formulario
-    setValue("nombreActividad", selectedEvent.title);
-    setValue("descripcionActividad", selectedEvent.descripcionActividad);
-    setValue("idCliente", selectedEvent.idCliente);
-    setValue("fechaEntrega", moment(selectedEvent.fechaEntrega).format('YYYY-MM-DD'));
-    setValue("fechaInicio", moment(selectedEvent.fechaInicio).format('YYYY-MM-DD'));
-    setValue("fechaFinal", moment(selectedEvent.fechaFinal).format('YYYY-MM-DD'));
+    if (!datosCargados) {
+      console.log("selectedEvent:", selectedEvent);
+      setValue("nombreActividad", selectedEvent.title);
+      setValue("descripcionActividad", selectedEvent.descripcionActividad);
+      setValue("idCliente", selectedEvent.idCliente);
+      setValue("fechaEntrega", moment(selectedEvent.fechaEntrega).format('YYYY-MM-DD'));
+      setValue("fechaInicio", moment(selectedEvent.fechaInicio).format('YYYY-MM-DD'));
+      setValue("fechaFinal", moment(selectedEvent.fechaFinal).format('YYYY-MM-DD'));
 
-    async function DatosClientes() {
-      try {
-        const response = await obtenerClientes();
-        const pagoData = response.data;
-
-        const clienteFormato = pagoData.map(cliente => ({
-          value: cliente.idCliente,
-          label: cliente.nombreClient,
-        }));
-
-        clienteFormato.unshift({
-          value: 0,
-          label: 'Seleccione un Cliente',
-        });
-
-        // Buscar el cliente que coincida con selectedEvent.idCliente
-        const clienteSeleccionado = clienteFormato.find(cliente => cliente.value === selectedEvent.idCliente);
-
-        if (clienteSeleccionado) {
-          setSelectedClienteCambio(clienteSeleccionado);
-        }
-
-        setCliente(clienteFormato);
-      } catch (error) {
-        console.error('Error al obtener los datos de Pagos', error);
-      }
+      cargarDatosClientes().then(() => {
+        setValue("idCliente", selectedEvent.idCliente);
+      });
     }
-    DatosClientes();
-  }, [selectedEvent]);
+  }, [selectedEvent, datosCargados, setValue]);
 
   return (
     <form onSubmit={onSubmit}>
@@ -79,26 +100,27 @@ export const FormActualizarEvento = ({ selectedEvent }) => {
           </div>
         </div>
         <div style={{ marginTop: 15, width: 350 }}>
-          <Controller
-            name="idCliente"
-            control={control}
-            defaultValue={selectedClienteCambio} // Usa defaultValue en lugar de value
-            render={({ field }) => (
-              <Select
-                {...field}
-                sx={{ marginTop: 10 }}
-                onChange={(selectedOption) => {
-                  setSelectedClienteCambio(selectedOption);
-                  field.onChange(selectedOption ? selectedOption.value : null); // Actualiza el valor del campo con el id del cliente seleccionado
-                }}
-                options={cliente}
-                isClearable
-                placeholder="Seleccione un Cliente"
-                menuPlacement='auto'
-                maxMenuHeight={100}
-              />
-            )}
-          />
+        <Controller
+          name="idCliente"
+          control={control}
+          defaultValue={selectedClienteCambio?.value || null} // Usa defaultValue en lugar de value
+          render={({ field }) => (
+            <Select
+              {...field}
+              sx={{ marginTop: 10 }}
+              onChange={(selectedOption) => {
+                console.log("Selected Option:", selectedOption);
+                setSelectedClienteCambio(selectedOption);
+                field.onChange(selectedOption ? selectedOption.value : null); // Actualiza el valor del campo con el id del cliente seleccionado
+              }}
+              options={clienteOptions}
+              isClearable
+              placeholder="Seleccione un Cliente"
+              menuPlacement='auto'
+              maxMenuHeight={100}
+            />
+          )}
+        />
         </div>
       </div>
 

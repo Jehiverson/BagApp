@@ -1,9 +1,8 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, Card, CardContent, } from '@mui/material';
-import IngresosGenerados from '../components/Graphics/IngresosGenerados';
-import Actividades from '../components/Graphics/Actividades';
+import { Container, Typography } from '@mui/material';
 import HomePageCliente from '../components/Diseños/Cliente';
+import HomePageAdmin from '../components/Diseños/Administrador';
 
 export default function PaginaDashboardApp() {
 
@@ -21,24 +20,15 @@ export default function PaginaDashboardApp() {
           <Typography variant="h4" sx={{ mb: 5 }}>
             ¡Hola! Bienvenido a Kingo Energy
           </Typography>
-          {role === 'Administrador' ? (
-            <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white' }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
-              Bienvenido
-            </Typography>
-          <CardContent sx={{ mb: 2 }}>
-            <IngresosGenerados />
-            <Actividades />
-          </CardContent>
-        </Card>
+          {role === 'Administrador' || role === 'Usuario' ? (
+          <div>
+            <HomePageAdmin />
+          </div>
           ) : null}
           {role === 'Cliente' ? (
             <div>
               <HomePageCliente />
             </div>
-          ) : null}
-          {role === 'Usuario' ? (
-            <div>Hola Usuario</div>
           ) : null}
         </Container>
       </>

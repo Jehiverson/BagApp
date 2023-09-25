@@ -51,7 +51,7 @@ export default function Nav({ openNav, onCloseNav }) {
   const username = localStorageUser ? localStorageUser.username : user.username;
 
   const allowedModulesByRole = {
-    Administrador: ['home', 'Clientes', 'Pagos', 'Actividades', 'Opciones'],
+    Administrador: ['home', 'Clientes', 'Pagos', 'Actividades'],
     Cliente: ['home', 'Actividades'],
     Usuario: ['home', 'Clientes', 'Pagos', 'Actividades'],
   };  

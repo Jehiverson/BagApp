@@ -1,40 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, CardContent } from '@mui/material';
+import { Typography } from '@mui/material';
 import { PieChart, Pie, Tooltip, Cell } from 'recharts';
 import { obtenerActividades } from '../../api/actividadApi';
 
 const Actividades = () => {
-  const [datosActividades, setDatosActividades] = useState([]);
+  const [datosActividades, setDatosActividades] = useState({ pendientes: [], completadas: [] });
 
   // Llama a la API y formatea los datos al cargar el componente
   useEffect(() => {
     obtenerActividades()
       .then((response) => {
         const actividades = response.data;
-        const datosFormateados = actividades.map((actividad) => {
-          // Formatear fechas y calcular duración en días
-          const fechaInicio = new Date(actividad.fechaInicio);
-          fechaInicio.setHours(fechaInicio.getHours() - 6); // Ajuste de huso horario
-          const fechaFinal = new Date(actividad.fechaFinal);
-          fechaFinal.setHours(fechaFinal.getHours() - 6); // Ajuste de huso horario
-          const duracionMilisegundos = fechaFinal - fechaInicio;
-          // Asegurar que la duración sea al menos 1 día
-          const duracionDias = Math.max(
-            Math.ceil(duracionMilisegundos / (1000 * 60 * 60 * 24)),
-            1
-          );
+        // Filtra actividades solo para el mes actual y estado "Pendiente"
+        const actividadesPendientes = actividades.filter(
+          (actividad) =>
+            actividad.estadoActividad === 'Pendiente' &&
+            new Date(actividad.fechaEntrega).getMonth() >= new Date().getMonth()
+        );
 
-          return {
-            nombre: actividad.nombreActividad,
-            duracion: duracionDias,
-          };
+        // Filtra actividades solo para el mes actual y estado "Completado"
+        const actividadesCompletadas = actividades.filter(
+          (actividad) =>
+            actividad.estadoActividad === 'Completa' &&
+            new Date(actividad.fechaEntrega).getMonth() >= new Date().getMonth()
+        );
+
+        // Reformatea los datos para que coincidan con lo que espera la gráfica de pastel
+        const datosPendientes = actividadesPendientes.map((actividad) => ({
+          nombre: actividad.nombreActividad,
+          duracion: 1, // Puedes ajustar esto según tus necesidades
+        }));
+
+        const datosCompletadas = actividadesCompletadas.map((actividad) => ({
+          nombre: actividad.nombreActividad,
+          duracion: 1, // Puedes ajustar esto según tus necesidades
+        }));
+
+        setDatosActividades({
+          pendientes: datosPendientes,
+          completadas: datosCompletadas,
         });
-        setDatosActividades(datosFormateados);
       })
       .catch((error) => {
         console.error('Error al obtener actividades', error);
       });
   }, []);
+
+  if (!datosActividades.pendientes.length && !datosActividades.completadas.length) {
+    // Puedes mostrar un mensaje de carga o manejar el estado de carga aquí
+    return <div>Cargando...</div>;
+  }
 
   const obtenerColor = (indice) => {
     const colores = [
@@ -67,17 +82,34 @@ const Actividades = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', margin: '1rem 0' }}>
       <div style={{ width: 'calc(50% - 0.5rem)' }}>
-        <Typography variant="h6">Actividades</Typography>
-        <PieChart width={600} height={400}>
+        <Typography variant="h6">Actividades Pendientes</Typography>
+        <PieChart width={400} height={400}>
           <Pie
             dataKey="duracion"
-            data={datosActividades}
+            data={datosActividades.pendientes}
             outerRadius={100}
             fill="#8884d8"
             label={({ nombre }) => nombre} // Utiliza el campo "nombre" de tus datos
           >
-            {datosActividades.map((entrada, indice) => (
-              <Cell key={`celda-${indice}`} fill={obtenerColor(indice)} />
+            {datosActividades.pendientes.map((entrada, indice) => (
+              <Cell key={`celda-pendiente-${indice}`} fill={obtenerColor(indice)} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} /> {/* Usar el componente personalizado para el tooltip */}
+        </PieChart>
+      </div>
+      <div style={{ width: 'calc(50% - 0.5rem)' }}>
+        <Typography variant="h6">Actividades Completadas</Typography>
+        <PieChart width={400} height={400}>
+          <Pie
+            dataKey="duracion"
+            data={datosActividades.completadas}
+            outerRadius={100}
+            fill="#82ca9d"
+            label={({ nombre }) => nombre} // Utiliza el campo "nombre" de tus datos
+          >
+            {datosActividades.completadas.map((entrada, indice) => (
+              <Cell key={`celda-completada-${indice}`} fill={obtenerColor(indice)} />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} /> {/* Usar el componente personalizado para el tooltip */}

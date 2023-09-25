@@ -1,16 +1,14 @@
 import PropTypes from 'prop-types';
-// @mui
 import { styled, alpha } from '@mui/material/styles';
-import { Toolbar, Tooltip, IconButton, Typography, OutlinedInput, InputAdornment } from '@mui/material';
-// component
+import { Toolbar, Tooltip, IconButton, Typography, OutlinedInput, InputAdornment, Box } from '@mui/material';
+import ReportePDF from './Reportes.pdf'; // Asegúrate de importar el componente ReportePDF adecuadamente
 import Iconify from '../../../components/iconify';
-
-// ----------------------------------------------------------------------
 
 const StyledRoot = styled(Toolbar)(({ theme }) => ({
   height: 96,
   display: 'flex',
   justifyContent: 'space-between',
+  alignItems: 'center', // Alinea verticalmente los elementos
   padding: theme.spacing(0, 1, 0, 3),
 }));
 
@@ -30,29 +28,43 @@ const StyledSearch = styled(OutlinedInput)(({ theme }) => ({
   },
 }));
 
-// ----------------------------------------------------------------------
-
 UserListToolbar.propTypes = {
   numSelected: PropTypes.number,
   filterName: PropTypes.string,
   onFilterName: PropTypes.func,
-  onDeleteSelected: PropTypes.func, // Asegúrate de tener esto definido
+  onDeleteSelected: PropTypes.func,
 };
 
-export default function UserListToolbar({ numSelected, filterName, onFilterName, onDeleteSelected, selected }) {
+export default function UserListToolbar({ numSelected, filterName, onFilterName, onDeleteSelected, selected, }) {
+  const showButtons = numSelected > 0;
+  console.log(selected);
   return (
     <StyledRoot
       sx={{
-        ...(numSelected > 0 && {
+        ...(showButtons && {
           color: 'primary.main',
           bgcolor: 'primary.lighter',
         }),
       }}
     >
-      {numSelected > 0 ? (
+      {showButtons ? (
+        <>
         <Typography component="div" variant="subtitle1">
-          {numSelected} selected
-        </Typography>
+            {numSelected} selected
+          </Typography>
+          
+          <Box display="flex" alignItems="center"> {/* Envuelve ambos botones en un contenedor flex */}
+            <div style={{ marginRight: '10px' }}>
+              <ReportePDF idActividad={selected} /> {/* Mueve el botón de ReportePDF aquí */}
+            </div>
+
+            <Tooltip title="Completar">
+              <IconButton onClick={onDeleteSelected} sx={{ marginLeft: '10px' }}> {/* Agrega un margen izquierdo al botón Completar */}
+                <Iconify icon="eva:checkmark-circle-2-fill" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </>
       ) : (
         <StyledSearch
           value={filterName}
@@ -64,20 +76,6 @@ export default function UserListToolbar({ numSelected, filterName, onFilterName,
             </InputAdornment>
           }
         />
-      )}
-
-      {numSelected > 0 ? (
-        <Tooltip title="Completar">
-          <IconButton onClick={onDeleteSelected}>
-            <Iconify icon="eva:checkmark-circle-2-fill" />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <Iconify icon="ic:round-filter-list" />
-          </IconButton>
-        </Tooltip>
       )}
     </StyledRoot>
   );

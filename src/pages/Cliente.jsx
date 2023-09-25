@@ -1,18 +1,17 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Avatar, Card, Table, Stack, Paper, Button, Checkbox, TableRow, MenuItem, TableBody, TableCell, Container, Typography, TableContainer, TablePagination, TextField, RadioGroup, Radio, FormControlLabel, IconButton, } from '@mui/material';
+import { Avatar, Card, Table, Stack, Paper, Button, TableRow, TableBody, TableCell, Container, Typography, TableContainer, TablePagination, IconButton, } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ReactModal from 'react-modal';
 import moment from 'moment';
 import 'moment/locale/es';
 import 'moment-timezone';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import { obtenerClientes, registrarCliente, actualizarCliente } from '../api/clienteApi';
+import { obtenerClientes } from '../api/clienteApi';
+import { FormIngresarCliente } from '../components/formulario/formIngresarCliente';
+import { FormActualizarCliente } from '../components/formulario/formActualizarCliente';
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -40,7 +39,7 @@ function applySortFilter(array, comparator, query) {
   }
   return stabilizedThis.map((el) => el[0]);
 }
-const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
+
 // Función para obtener la lista de clientes
 export const fetchClientes = (setClientes) => {
   obtenerClientes()
@@ -51,33 +50,13 @@ export const fetchClientes = (setClientes) => {
       console.error('Error al obtener los datos de los clientes:', error);
     });
 };
-export const handleDeleteSelected = async (selectedClients, clientes, setClientes) => {
-  try {
-    // Obtener los IDs de los clientes seleccionados
-    const selectedIds = selectedClients.map(cliente => cliente.idCliente);
-    // Enviar una petición DELETE para eliminar los registros
-    await Promise.all(selectedIds.map(idCliente =>
-      axios.delete(`http://localhost:5000/bagapp-react/us-central1/app/cliente/${idCliente}`)
-    ));
-
-    // Actualizar la lista de clientes después de eliminar
-    fetchClientes(setClientes);
-
-    // Mostrar notificación de éxito
-    toast.success('Clientes eliminados exitosamente');
-  } catch (error) {
-    console.error('Error al eliminar los registros:', error);
-    // Mostrar notificación de error
-    toast.error('Error al eliminar los clientes');
-  }
-};
 
 export default function UserPage() {
   ReactModal.setAppElement('#root'); 
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');
   const [selected, setSelected] = useState([]);
-  const [orderBy, setOrderBy] = useState('nameClient');
+  const [orderBy, setOrderBy] = useState('nombreClient');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
   // Obtener el objeto de usuario desde localStorage
@@ -86,24 +65,9 @@ export default function UserPage() {
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
   const [clientes, setClientes] = useState([]);
-  const [childrenGenders, setChildrenGenders] = useState([]);
-  const [childrenAges, setChildrenAges] = useState([]);
   const [isNewEventModalOpen, setNewEventModalOpen] = useState(false);
   const [abrirModal, setAbrirModal] = useState(false);
   const [seleccionar, setSeleccionar] = useState(null);
-  const [newEvent, setNewEvent] = useState({
-    nombreClient: '',
-    apellidoClient: '',
-    fechaNacimiento: '',
-    dpi: '',
-    telefono: '',
-    genero: '',
-    estadoCivil: '',
-    trabajando: 'No',
-    ocupacion: '',
-    direccion: '',
-    cantidadHijos: ''
-  });
   // Define el array de cabeceras de tabla
   const TABLE_HEAD = [
     { id: 'nameClient', label: 'Nombre', alignRight: false },
@@ -119,180 +83,14 @@ export default function UserPage() {
   if (role === 'Administrador') {
     TABLE_HEAD.push({ id: 'Editar', label: 'Editar', alignRight: false });
   }
-  // onChange para Insertar Clientes
-  const handleEstadoCivilChange = (event) => {
-    setNewEvent(prevEvent => ({ ...prevEvent, estadoCivil: event.target.value }));
-  };
-  const handleTrabajandoChange = (event) => {
-    setNewEvent(prevEvent => ({ ...prevEvent, trabajando: event.target.value }));
-  };
-  const handleNameChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^[A-Za-z\s]+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, nombreClient: inputValue }));
-    }
-  };
-  const handleApellidoChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^[A-Za-z\s]+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, apellidoClient: inputValue }));
-    }
-  };
-  const handleDpiChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^\d+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, dpi: inputValue }));
-    }
-  };
-  const handleTelefonoChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^\d+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, telefono: inputValue }));
-    }
-  };
-  const handleGeneroChange = (event) => {
-    setNewEvent(prevEvent => ({ ...prevEvent, genero: event.target.value }));
-  };
-  const handleOcupacionChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^[A-Za-z\s]+$/.test(inputValue) || inputValue === '') {
-      setNewEvent(prevEvent => ({ ...prevEvent, ocupacion: inputValue }));
-    }
-  };
-  const handleDireccionChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^[A-Za-z0-9\s\W]+$/.test(inputValue) || inputValue === '') {
-      setNewEvent((prevEvent) => ({ ...prevEvent, direccion: inputValue }));
-    }
-  };  
-  const handleCantidadHijosChange = (e) => {
-    const inputValue = e.target.value;
-    if (/^\d+$/.test(inputValue) || inputValue === '') {
-      const numChildren = parseInt(inputValue, 10); // Agrega la base numérica 10
-      setNewEvent(prevEvent => ({ ...prevEvent, cantidadHijos: numChildren }));
-      setChildrenAges(Array(numChildren).fill(''));
-    }
-  };
-  // onChange para Editar Clientes
-  const handleFieldChange = (fieldName, value) => {
-    setSeleccionar(prevSeleccionar => ({
-      ...prevSeleccionar,
-      [fieldName]: value,
-    }));
-  };
-  // Actualizar el estado civil
-  const handleEstadoCivilChangeSelec = (event) => {
-    const newStateCivil = event.target.value;
-    setSeleccionar(prevSeleccionar => ({
-      ...prevSeleccionar,
-      estadoCivil: newStateCivil,
-    }));
-  };
-  const handleChildGenderChange = (event, index) => {
-    const newGenders = [...childrenGenders];
-    newGenders[index] = event.target.value;
-    setChildrenGenders(newGenders);
-  };
   useEffect(() => {
     fetchClientes(setClientes);
   }, []);
-  const createEvent = async () => {
-    try {
-      const clientId = Math.floor(Math.random() * 1000); // Genera un ID de cliente aleatorio
-      const localStart = moment(newEvent.fechaNacimiento).tz('UTC').format('YYYY-MM-DD'); // Convertir a UTC y quitar la hora
-      const requestData = {
-        ...newEvent,
-        idCliente: clientId, // Agrega el clientId en la solicitud del cliente
-        fechaNacimiento: localStart,
-      };
-  
-      if (newEvent.cantidadHijos > 0) {
-        const childrenData = [...Array(newEvent.cantidadHijos)].map((_, index) => ({
-          idHijo: Math.floor(Math.random() * 1000),
-          idCliente: clientId, // Utiliza el mismo clientId para los hijos
-          edad: childrenAges[index] || '', // Fecha de nacimiento
-          genero: childrenGenders[index] || '', // Género
-        }));
-        requestData.childrenData = childrenData; // Agregar datos de los hijos al objeto de solicitud
-      }
-  
-      const response = await registrarCliente(requestData);
-  
-      closeNewEventModal();
-      setNewEvent({
-        nombreClient: '',
-        apellidoClient: '',
-        fechaNacimiento: '',
-        dpi: '',
-        telefono: '',
-        genero: '',
-        estadoCivil: '',
-        trabajando: '',
-        ocupacion: '',
-        direccion: '',
-        cantidadHijos: '',
-      });
-  
-      setChildrenAges([]);
-      setChildrenGenders([]); // Limpiar los géneros de los hijos
-  
-      // Actualizar la lista de clientes después de crear un nuevo evento
-      fetchClientes(setClientes);
-      // Mostrar notificación de éxito
-      toast.success('Cliente creado exitosamente');
-    } catch (error) {
-      console.error('Error creating event:', error);
-      toast.error('Cliente no registrado');
-    }
-  };  
-    
-  const deleteSelected = () => {
-    if (selected.length > 0) {
-      const selectedClients = selected.map(selectedId => clientes.find(cliente => cliente.idCliente === selectedId));
-      handleDeleteSelected(selectedClients, clientes, setClientes);
-      setSelected([]);
-    }
-  };
-  // Función para actualizar el cliente
-  const updateEvent = async () => {
-    try {
-      await actualizarCliente(seleccionar.idCliente, seleccionar);
-      handleCloseModal();
-      // Actualizar la lista de clientes después de actualizar un evento
-      fetchClientes(setClientes);
-      // Mostrar notificación de éxito
-      toast.success('Cliente actualizado exitosamente');
-    } catch (error) {
-      console.error('Error updating event:', error);
-      toast.error('Error al actualizar el cliente');
-    }
-  };     
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(clientes.map((cliente) => cliente.idCliente));
-    } else {
-      setSelected([]);
-    }
-  };
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    setSelected(newSelected);
   };
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -310,6 +108,7 @@ export default function UserPage() {
   };
   const closeNewEventModal = () => {
     setNewEventModalOpen(false);
+    fetchClientes(setClientes);
   };
   const handleOpenModal = (userData) => {
     setSeleccionar(userData);
@@ -319,12 +118,8 @@ export default function UserPage() {
   const handleCloseModal = () => {
     setSeleccionar(null);
     setAbrirModal(false);
+    fetchClientes(setClientes);
   };
-  const handleChildAgeChange = (e, index) => {
-    const newChildrenAges = [...childrenAges];
-    newChildrenAges[index] = e.target.value;
-    setChildrenAges(newChildrenAges);
-  };  
 
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
   const filteredUsers = applySortFilter(clientes, getComparator(order, orderBy), filterName);
@@ -378,182 +173,11 @@ export default function UserPage() {
             },
           }}
           >
-          {/* Contenido del modal */}
-          <div>
-          <TextField
-            type="text"
-            label="Nombre"
-            value={newEvent.nombreClient}
-            onChange={handleNameChange}
-            fullWidth
-            error={newEvent.nombreClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nombreClient)}
-            helperText={newEvent.nombreClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.nombreClient) ? 'No se permiten números' : ''}
-            sx={{ marginBottom: 2 }}
-          />
-          <TextField
-            type="text"
-            label="Apellido"
-            value={newEvent.apellidoClient}
-            onChange={handleApellidoChange}
-            fullWidth
-            error={newEvent.apellidoClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.apellidoClient)}
-            helperText={newEvent.apellidoClient !== '' && !/^[A-Za-z\s]+$/.test(newEvent.apellidoClient) ? 'No se permiten números' : ''}
-            sx={{ marginBottom: 2 }}
-          />
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Nacimiento</h6>
-              <TextField
-                type="date"
-                value={newEvent.fechaNacimiento}
-                onChange={(e) => setNewEvent({ ...newEvent, fechaNacimiento: e.target.value })}
-                fullWidth
-                sx={{ marginBottom: 2 }}
-              />
-            </div>
-            <TextField
-              type="number"
-              label="DPI"
-              value={newEvent.dpi}
-              onChange={handleDpiChange}
-              fullWidth
-              error={newEvent.dpi !== '' && !/^\d+$/.test(newEvent.dpi)}
-              helperText={newEvent.dpi !== '' && !/^\d+$/.test(newEvent.dpi) ? 'Solo se permiten números' : ''}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="number"
-              label="Telefono"
-              value={newEvent.telefono}
-              onChange={handleTelefonoChange}
-              fullWidth
-              error={newEvent.telefono !== '' && !/^\d+$/.test(newEvent.telefono)}
-              helperText={newEvent.telefono !== '' && !/^\d+$/.test(newEvent.telefono) ? 'Solo se permiten números' : ''}
-              sx={{ marginBottom: 2 }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h5 style={{ margin: '0', marginRight: '16px' }}>Genero:</h5>
-              <RadioGroup
-                aria-label="Genero"
-                name="genero"
-                value={newEvent.genero}
-                onChange={handleGeneroChange}
-                row
-                sx={{ marginBottom: 2 }}
-              >
-                <FormControlLabel value="F" control={<Radio />} label="F" />
-                <FormControlLabel value="M" control={<Radio />} label="M" />
-                <FormControlLabel value="otro" control={<Radio />} label="Otro" />
-              </RadioGroup>
-            </div>
-            <TextField
-              select
-              label="Estado Civil"
-              value={newEvent.estadoCivil}
-              onChange={handleEstadoCivilChange}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            >
-              {estadosCiviles.map((estadoCivil) => (
-                <MenuItem key={estadoCivil} value={estadoCivil}>
-                  {estadoCivil}
-                </MenuItem>
-              ))}
-            </TextField>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h5 style={{ margin: '0', marginRight: '16px' }}>Esta Trabajando?</h5>
-              <RadioGroup
-                aria-label="Trabajando"
-                name="trabajando"
-                value={newEvent.trabajando}
-                onChange={handleTrabajandoChange}
-                row
-                sx={{ marginBottom: 2 }}
-              >
-                <FormControlLabel value="Si" control={<Radio />} label="Si" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-              </RadioGroup>
-            </div>
-            {newEvent.trabajando === 'Si' && (
-              <TextField
-                type="text"
-                label="Ocupacion"
-                value={newEvent.ocupacion}
-                onChange={handleOcupacionChange}
-                fullWidth
-                error={newEvent.ocupacion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.ocupacion)}
-                helperText={newEvent.ocupacion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.ocupacion) ? 'No se permiten números' : ''}
-                sx={{ marginBottom: 2 }}
-              />
-            )}
-            <TextField
-              type="text"
-              label="Direccion"
-              value={newEvent.direccion}
-              onChange={handleDireccionChange}
-              fullWidth
-              error={newEvent.direccion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.direccion)}
-              helperText={newEvent.direccion !== '' && !/^[A-Za-z\s]+$/.test(newEvent.direccion)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="number"
-              label="Cantidad de Hijos"
-              value={newEvent.cantidadHijos}
-              onChange={handleCantidadHijosChange}
-              fullWidth
-              error={newEvent.cantidadHijos !== '' && !/^\d+$/.test(newEvent.cantidadHijos)}
-              helperText={newEvent.cantidadHijos !== '' && !/^\d+$/.test(newEvent.cantidadHijos) ? 'Solo se permiten números' : ''}
-              sx={{ marginBottom: 2 }}
-            />
-          </div>
-          {newEvent.cantidadHijos > 0 && (
-          <div>
-            {[...Array(newEvent.cantidadHijos)].map((_, index) => (
-              <div key={index}>
-                {/* Agrega un campo de selección de género para cada hijo */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  <h5 style={{ margin: '0', marginRight: '16px' }}>Género del Hijo {index + 1}:</h5>
-                  <RadioGroup
-                    aria-label={`Género del Hijo ${index + 1}`}
-                    name={`generoHijo${index}`}
-                    value={childrenGenders[index] || ''} // Supongo que tienes un array childrenGenders
-                    onChange={(e) => handleChildGenderChange(e, index)} // Debes manejar el cambio de género de los hijos
-                    row
-                    sx={{ marginBottom: 2 }}
-                  >
-                    <FormControlLabel value="Mujer" control={<Radio />} label="M" />
-                    <FormControlLabel value="Hombre" control={<Radio />} label="H" />
-                  </RadioGroup>
-                </div>
-
-                {/* Campo de fecha de nacimiento del hijo */}
-                <TextField
-                  type="date"
-                  label={`Fecha de Nacimiento del Hijo ${index + 1}`}
-                  value={childrenAges[index] || ''}
-                  onChange={(e) => handleChildAgeChange(e, index)}
-                  fullWidth
-                  sx={{ marginBottom: 2 }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
-              </div>
-            ))}
-            </div>
-          )}
-            <br />
-          {/* Botones */}
-          <Button onClick={createEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
-            Nuevo Cliente
-          </Button>
-          <Button onClick={closeNewEventModal} variant="contained">
-            Cancelar
-          </Button>
+            <FormIngresarCliente closeModal={closeNewEventModal} />
         </ReactModal>
         {role === 'Administrador' || role === 'Usuario' ? (
           <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} onDeleteSelected={deleteSelected} selected={selected} />
+          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
               <Table>
@@ -564,7 +188,6 @@ export default function UserPage() {
                   rowCount={clientes.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
-                  onSelectAllClick={handleSelectAll}
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
@@ -672,109 +295,10 @@ export default function UserPage() {
             },
           }}
         >
-          <div>
-            <TextField
-              type="text"
-              label="Nombre"
-              value={seleccionar ? seleccionar.nombreClient : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('nombreClient', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="text"
-              label="Apellido"
-              value={seleccionar ? seleccionar.apellidoClient : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('apellidoClient', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h6 style={{ margin: '0', marginRight: '8px' }}>Fecha Nacimiento</h6>
-              <TextField
-                type="date"
-                value={seleccionar ? seleccionar.fechaNacimiento : ''}
-                onChange={(event) => handleFieldChange('fechaNacimiento', event.target.value)}
-                fullWidth
-                sx={{ marginBottom: 2 }}
-              />
-            </div>
-            <TextField
-              type="text"
-              label="DPI"
-              value={seleccionar ? seleccionar.dpi : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('dpi', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="text"
-              label="Telefono"
-              value={seleccionar ? seleccionar.telefono : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('telefono', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="text"
-              label="Genero"
-              value={seleccionar ? seleccionar.genero : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('genero', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              select
-              label="Estado Civil"
-              value={seleccionar ? seleccionar.estadoCivil : ''}
-              onChange={handleEstadoCivilChangeSelec}
-              fullWidth
-              sx={{ marginBottom: 2 }}
-            >
-              {estadosCiviles.map((estadoCivil) => (
-                <MenuItem key={estadoCivil} value={estadoCivil}>
-                  {estadoCivil}
-                </MenuItem>
-              ))}
-            </TextField>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-              <h5 style={{ margin: '0', marginRight: '16px' }}>Esta Trabajando?</h5>
-              <RadioGroup
-                aria-label="Trabajando"
-                name="trabajando"
-                value={seleccionar ? seleccionar.trabajando : ''}
-                onChange={(event) => handleFieldChange('trabajando', event.target.value)}
-                row
-                sx={{ marginBottom: 2 }}
-              >
-                <FormControlLabel value="Si" control={<Radio />} label="Si" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-              </RadioGroup>
-            </div>
-            <TextField
-              type="text"
-              label="Ocupacion"
-              value={seleccionar ? seleccionar.ocupacion : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('ocupacion', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <TextField
-              type="text"
-              label="Cantidad de Hijos"
-              value={seleccionar ? seleccionar.cantidadHijos : ''}
-              fullWidth
-              onChange={(event) => handleFieldChange('cantidadHijos', event.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            {/* Botones */}
-            <Button onClick={updateEvent} variant="contained" color="primary" sx={{ marginRight: 2 }}>
-              Actualizar Cliente
-            </Button>
-            <Button onClick={handleCloseModal} variant="contained">
-              Cancelar
-            </Button>
-          </div>
+          <FormActualizarCliente
+            cliente={seleccionar}
+            closeModal={handleCloseModal}
+           />
         </ReactModal>
       </Container>
     </>

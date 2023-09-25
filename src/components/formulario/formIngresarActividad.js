@@ -13,7 +13,7 @@ export const FormIngresarActividad = () => {
   const { register, handleSubmit, formState: { errors }, control, reset } = useForm();
   const [clientes, setClientes] = useState([]);
   const [selectedCliente, setSelectedCliente] = useState({ value: '0', label: 'Seleccione un Cliente' });
-  const [apiCalled, setApiCalled] = useState(false); // Indicador para controlar si se llamó a la API
+  const [apiCalled, setApiCalled] = useState(false); 
 
   const onSubmit = handleSubmit(async (values) => {
     try {

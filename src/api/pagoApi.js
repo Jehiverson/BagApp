@@ -4,7 +4,7 @@ export const pagoUnion = () => axios.get('/pago/union');
 
 export const obtenerPagos = () => axios.get('/pago');
 
-export const datosPagos = () => axios.get('/pago/pagos');
+export const datosPagos = () => axios.get('/pago/datosCombinados');
 
 export const pagarDatos = (values) => {
     return axios.post(`/pago`, values);

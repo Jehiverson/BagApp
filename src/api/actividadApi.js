@@ -30,6 +30,6 @@ export const handleUpdateActivityStatus = async (idActividad, newStatusObject, a
     }
 };
 
-export const actualizarActividad = (id, eventData) => {
-    return axios.put(`/actividad/${id}`, eventData)
+export const actualizarActividad = (idActividad, values) => {
+    return axios.put(`/actividad/${idActividad}`, values)
 };

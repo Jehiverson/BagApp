@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, RadioGroup, FormControlLabel, Radio, Button, TextField, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Paper, } from '@mui/material';
-import Select from 'react-select';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Container, Typography, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Paper, } from '@mui/material';
 import moment from 'moment'; // Cambia la importación de moment
 import 'moment/locale/es'; // Importa el idioma si lo deseas
 import 'moment-timezone';
-import { useForm, Controller } from "react-hook-form";
-import {v4 as uuidv4} from 'uuid';
 import Scrollbar from '../components/scrollbar';
 import PaymentsPDFGenerator from '../sections/@dashboard/pagopdf/PaymentsPDFGenerator';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import { obtenerActividades } from '../api/actividadApi';
-import { actividadPago, obtenerPagos, pagarDatos } from '../api/pagoApi';
+import { obtenerPagos } from '../api/pagoApi';
 
 const TABLE_HEAD = [
   { id: 'idCliente', label: 'ID Cliente', alignRight: false },
@@ -67,60 +61,7 @@ export default function ProductsPage() {
   // Extraer el valor de 'tipoRol' del objeto de usuario
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
-  const [showVoucher, setShowVoucher] = useState(false);
-  const { register, handleSubmit, formState: {errors}, control, reset} = useForm();
-  
-  const onSubmit = handleSubmit(async (values) => {
-    try {
-      const idPago = uuidv4();
-      console.log('idPago:', idPago);
-      const idActividad = values.actividad.value;
-      values.idActividad = idActividad;
-      delete values.actividad;
-      values.idPago = idPago;
-      await pagarDatos(values);
-      await actividadPago(idActividad, idPago);
-      toast.success("Pago efectuado");
-      reset({
-        tipoPago: 'efectivo',
-        noVoucher: '',
-        nombre: '',
-        apellido: '',
-        fechaPago: new Date(),
-        actividad: null,
-        monto: '',
-        descripcion: '',
-        nit: '',
-      });
-    } catch (error) {
-      console.error("Error al pagar", error)
-      toast.error("Error al Pagar");
-    }
-  })
-
-  const [actividades, setActividades] = useState('');
-  const [selectedActividad, setSelectedActividad] = useState(null);
   useEffect(() => {
-    async function getActividades() {
-      try {
-        const responseActividades = await obtenerActividades();
-        const actividadData = responseActividades.data;
-
-        const actividadesFormatted = actividadData.map(actividad => ({
-          value: actividad.idActividad,
-          label: actividad.nombreActividad
-        }));
-
-        actividadesFormatted.unshift({
-          value: 0,
-          label: 'Seleccione una Actividad'
-        });
-
-        setActividades(actividadesFormatted);
-      } catch (error) {
-        console.error('Error al obtener las actividades:', error);
-      }
-    }
     async function getPagos() {
       try {
         const responsePagos = await obtenerPagos();
@@ -131,7 +72,6 @@ export default function ProductsPage() {
       }
     } 
     getPagos();
-    getActividades();
   }, []);
 
   const handleRequestSort = (event, property) => {
@@ -163,108 +103,6 @@ export default function ProductsPage() {
         <Typography variant="h4" sx={{ mb: 5 }}>
           Pagos
         </Typography>
-  
-        {role === 'Cliente' ? (
-          <Card sx={{ p: 3, boxShadow: 3, backgroundColor: 'white', marginBottom: '20px' }}>
-          <form 
-            onSubmit={onSubmit}
-            style={{ display: "flex", flexDirection: "column" }}
-          >
-            <Typography variant='h4'>Tipo de pago</Typography>
-            <Controller
-              name="tipoPago"
-              control={control}
-              defaultValue="efectivo" // Establece el valor inicial deseado
-              render={({ field }) => (
-                <RadioGroup
-                  aria-label="payment-method"
-                  name="paymentMethod"
-                  value={field.value}
-                  onChange={(e) => {
-                    field.onChange(e);
-                    if (e.target.value === 'voucher') {
-                      // Mostrar el TextField de Voucher si se selecciona 'voucher'
-                      setShowVoucher(true);
-                    } else {
-                      // Ocultar el TextField de Voucher si se selecciona 'efectivo'
-                      setShowVoucher(false);
-                    }
-                  }}
-                >
-                  <div style={{display: "flex", marginTop: "15px", marginLeft: "20px"}}>
-                    <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
-                    <FormControlLabel value="voucher" control={<Radio />} label="Voucher" />
-                  </div>
-                </RadioGroup>
-              )}
-            />
-            {showVoucher && (
-              <Controller
-                name="noVoucher"
-                control={control}
-                defaultValue=""
-                render={({field}) => (
-                  <TextField 
-                    type='text'
-                    label="Numero de Voucher"
-                    {...field}
-                    style={{marginRight: "20px", marginLeft: "20px", marginTop: "10px"}}
-                  />
-                )}
-              />
-            )}
-            <div style={{display: "flex"}}>
-              <TextField type="text" {...register("nombre", { required: true })} label="Nombre" style={{ marginBottom: "10px", marginLeft: "10px", marginTop: "10px"}} fullWidth />
-              {errors.nombre && <p style={{color: "red"}}>Username is required</p>}
-              <TextField type="text" {...register("apellido", { required: true })} label="Apellido" style={{ marginBottom: "20px", marginLeft: "20px", marginTop: "10px" }} fullWidth />
-              {errors.apellido && <p style={{color: "red"}}>Username is required</p>}
-            </div>
-            <div style={{display: "flex"}}>
-              <TextField type="date" {...register("fechaPago", { required: true })} style={{ marginBottom: "10px", marginLeft: "10px", marginRight: "20px",}} />
-              {errors.fechaPago && <p style={{color: "red"}}>Date is required</p>}
-              <Controller
-                name="actividad" // Nombre del campo
-                control={control}
-                defaultValue={null} // Valor inicial (puede ser null u otra opción predeterminada)
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    styles={{width: '100px'}}
-                    value={selectedActividad}
-                    onChange={(selectedOption) => {
-                      setSelectedActividad(selectedOption); // Actualizar el estado con la opción seleccionada
-                      field.onChange(selectedOption); // Actualizar el valor en React Hook Form
-                    }}
-                    options={actividades}
-                    isClearable
-                    placeholder="Seleccione una Actividad"
-                  />
-                )}
-              />
-              <TextField type="text" {...register("monto", { required: true })} label="Monto" fullWidth sx={{ marginBottom: 2, marginLeft: 2 }} />
-              {errors.monto && <p style={{color: "red"}}>Username is required</p>}
-            </div>
-            <TextField type="text" {...register("descripcion", { required: true })} label="Descripcion" fullWidth sx={{ marginBottom: 2 }} multiline />
-            {errors.descripcion && <p style={{color: "red"}}>Username is required</p>}
-            {showVoucher && (
-              <Controller
-                name="nit"
-                control={control}
-                defaultValue=""
-                render={({field}) => (
-                  <TextField 
-                    type='text'
-                    label="NIT"
-                    {...field}
-                    style={{marginBottom: 20}}
-                  />
-                )}
-              />
-            )}
-            <Button type="submit" variant='contained' color='primary'>Pagar</Button>
-          </form>
-        </Card>
-        )  : null}
 
         {role === 'Administrador' || role === 'Usuario' ? (
           <Card>

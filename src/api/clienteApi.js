@@ -2,8 +2,8 @@ import axios from "./axios";
 
 export const obtenerClientes = () => axios.get('/cliente');
 
-export const registrarCliente = (requestData) => {
-    return axios.post(`/cliente`, requestData);
+export const registrarCliente = (clienteData) => {
+    return axios.post(`/cliente`, clienteData);
 };
 
 export const actualizarCliente = async (idCliente, datosCliente) => {
