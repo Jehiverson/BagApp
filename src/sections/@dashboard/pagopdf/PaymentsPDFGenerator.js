@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Modal, Paper, TextField, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import { Button, Modal, Paper, TextField, Radio, RadioGroup, FormControlLabel, Select, MenuItem } from '@mui/material';
+import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format, parseISO, isSameMonth } from 'date-fns'; // Importa parseISO desde date-fns
@@ -11,6 +12,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   // Extraer el valor de 'tipoRol' del objeto de usuario
   const username = localStorageUser ? localStorageUser.username : null;
+  const [selectedActividades, setSelectedActividades] = useState([]);
   const [newEvent, setNewEvent] = useState({
     fechaInicio: '',
     fechaFinal: '',
@@ -32,6 +34,11 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
       filteredPayments = filteredPayments.filter((pago) => pago.tipoPago === 'voucher');
     } else if (filtroTipo === 'efectivo') {
       filteredPayments = filteredPayments.filter((pago) => pago.tipoPago === 'efectivo');
+    }
+
+    // Aplica el filtro por idActividad (nuevo filtro)
+    if (selectedActividades.length > 0) {
+      filteredPayments = filteredPayments.filter((pago) => selectedActividades.includes(pago.idActividad));
     }
 
     const startDate = parseISO(`${fechaInicio}T00:00:00.000-06:00`);  // Parsea la fecha a un objeto Date
@@ -69,6 +76,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
       pago.idCliente !== null ? `${pago.idCliente} - ${pago.nombre} ${pago.apellido}` : `${pago.nombre} ${pago.apellido}`,
       format(new Date(pago.fechaPago), 'yyyy-MM-dd HH:mm:ss', { timeZone: 'America/Guatemala' }),
       pago.monto,
+      pago.actividad.nombreActividad,
       pago.noVoucher,
       pago.tipoPago,
       pago.nit,
@@ -76,7 +84,7 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
     ]);
 
     doc.autoTable({
-      head: [['N°', 'Cliente', 'Fecha', 'Monto', 'Voucher', 'Tipo', 'NIT', 'Descripcion']],
+      head: [['N°', 'Cliente', 'Fecha', 'Monto', 'Actividad','Voucher', 'Tipo', 'NIT', 'Descripcion']],
       body: tableData,
       startY: 60,
       theme: 'grid', // Usar el estilo de tabla grid
@@ -114,6 +122,19 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
 
     return `Mes de ${startMonth} y ${endMonth}`;
   };
+
+  // Filtrar y obtener opciones únicas de actividades
+  const uniqueActivities = pagoData.reduce((acc, pago) => {
+    // Verificar si ya existe un objeto con el mismo idActividad
+    const existingActividad = acc.find((item) => item.idActividad === pago.idActividad);
+
+    if (!existingActividad) {
+      // Si no existe, agregarlo a la lista única con ambas propiedades
+      acc.push({ idActividad: pago.idActividad, nombreActividad: pago.actividad.nombreActividad });
+    }
+
+    return acc;
+  }, []);
 
   return (
     <div>
@@ -158,7 +179,25 @@ const PaymentsPDFGenerator = ({ pagoData }) => {
             <FormControlLabel value="voucher" control={<Radio />} label="Voucher" />
             <FormControlLabel value="efectivo" control={<Radio />} label="Efectivo" />
           </RadioGroup>
-          <Button variant="contained" color="primary" onClick={handleGeneratePDF}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+            <h6 style={{ margin: '0', marginRight: '8px' }}>Seleccionar Actividad</h6>
+            <Select
+              multiple // Permitir selección múltiple
+              value={selectedActividades}
+              onChange={(e) => setSelectedActividades(e.target.value)}
+              fullWidth
+              sx={{ marginBottom: 2 }}
+            >
+              <MenuItem value="">Todas las actividades</MenuItem>
+              {/* Itera sobre las opciones únicas de actividades */}
+              {uniqueActivities.map((actividad) => (
+                <MenuItem key={actividad.idActividad} value={actividad.idActividad}>
+                  {`${actividad.idActividad} - ${actividad.nombreActividad}`}
+                </MenuItem>
+              ))}
+            </Select>
+          </div>
+          <Button variant="contained" color="primary" onClick={handleGeneratePDF} startIcon={<CloudDownloadOutlinedIcon />}>
             Generar PDF
           </Button>
         </Paper>

@@ -10,9 +10,10 @@ const HomePageCliente = () => {
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const user = localStorageUser ? localStorageUser.username : null;
   const cliente = localStorageUser ? localStorageUser.idCliente : null;
+  console.log(cliente);
   const [actividades, setActividades] = useState([]);
   const [pagos, setPagos] = useState([]);
-  const [dataLoaded, setDataLoaded] = useState(false); // Nuevo estado para controlar la carga de datos
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     // Función para obtener actividades
@@ -32,8 +33,8 @@ const HomePageCliente = () => {
         const response = await obtenerPagos();
         const pagoData = response.data;
         console.log(pagoData);
-        console.log(pagoData);
-        const pagosCliente = pagoData.filter((pago) => pago.idCliente === cliente);
+        const pagosCliente = pagoData.filter((pago) => parseInt(pago.idCliente) === parseInt(cliente));
+        console.log(pagosCliente);
         setPagos(pagosCliente);
       } catch (error) {
         console.error('Error al obtener los pagos:', error);

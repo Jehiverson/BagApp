@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Modal, Paper, TextField, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import { Button } from '@mui/material';
+import { format } from 'date-fns-tz';
 import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { parseISO } from 'date-fns';
 import logo from './pdf/logo_pdf.png';
 import {datosPagos} from '../../../api/pagoApi';
 
@@ -17,6 +17,8 @@ function calcularEdad(fechaNacimiento) {
 
 const ReportePDF = ({ idActividad }) => {
   const [actividad, setActividad] = useState([]);
+  const localStorageUser = JSON.parse(localStorage.getItem('user'));
+  const username = localStorageUser ? localStorageUser.username : null;
 
   const obtenerActividad = async () => {
     try {
@@ -38,17 +40,37 @@ const ReportePDF = ({ idActividad }) => {
     obtenerActividad ();
   }, [idActividad]);
 
-  const [modalOpen, setModalOpen] = useState(false);
-
   const getTitle = () => 'BANCO DE ALIMENTOS DE GUATEMALA - BASE DE DATOS DE BENEFICIARIOS';
   const getTitulo = () => {
-    const nombreActividad = actividad.length > 0 ? actividad[0].nombreActividad : '';
-    const nombreOrganizacion = `Nombre de la Organización: ${nombreActividad}`;
-    const lugarEntrega = 'Lugar de entrega: manz 21 lote 8 sec, 2 Tierra Nueva 1';
-    const responsabilidadProyecto = 'Responsabilidad del Proyecto: Kingo Energy';
+    let nombreActividad = '';
+    let fechaEntrega = '';
+    let lugarActividad = '';
 
-    return `${nombreOrganizacion}          Fecha entrega:          ${lugarEntrega}          ${responsabilidadProyecto}`;
-  };
+    if (actividad.length > 0) {
+        const primeraActividad = actividad[0].actividad;
+
+        if (primeraActividad) {
+            nombreActividad = primeraActividad.nombreActividad;
+
+            lugarActividad = primeraActividad.lugarActividad;
+
+            // Obtener la fecha de entrega en formato UTC
+            const fechaEntregaUTC = new Date(primeraActividad.fechaEntrega);
+
+            // Definir la zona horaria de América Central
+            const zonaHorariaAmericaCentral = 'America/Guatemala';
+
+            // Formatear la fecha a la zona horaria de América Central (solo fecha y hora)
+            fechaEntrega = format(fechaEntregaUTC, 'yyyy-MM-dd', { timeZone: zonaHorariaAmericaCentral });
+        }
+    }
+
+    const nombreOrganizacion = `Nombre de la Actividad: ${nombreActividad}`;
+    const lugarEntrega = `Lugar de entrega: ${lugarActividad}`;
+    const responsabilidadProyecto = `PDF Generado por: ${username}`;
+
+    return `${nombreOrganizacion}          Fecha entrega: ${fechaEntrega}         ${lugarEntrega}          ${responsabilidadProyecto}`;
+};
 
   const handleGeneratePDF = () => {
     console.log(actividad);
@@ -84,6 +106,7 @@ const ReportePDF = ({ idActividad }) => {
 
       const tableHeaders = [
         [
+          { content: 'No', rowSpan: 3 },
           { content: 'CODIGO', rowSpan: 3 },
           { content: 'Nombre completo del representante de la familia\n(Nombres, Apellido)', rowSpan: 3 },
           { content: 'Numero de DPI', rowSpan: 3 },
@@ -127,8 +150,11 @@ const ReportePDF = ({ idActividad }) => {
         ],
       ];
 
+      let autoIncrement = 0;
+
       const tableData = Array.isArray(actividad) ? actividad.map((actividad) => {
         const clienteInfo = actividad.cliente; 
+        autoIncrement += 1;
         if (clienteInfo) {
           const birthDate = new Date(clienteInfo.fechaNacimiento);
           const age = currentDate.getFullYear() - birthDate.getFullYear();
@@ -167,7 +193,8 @@ const ReportePDF = ({ idActividad }) => {
           });
         
           return [
-            actividad.idActividad,
+            autoIncrement,
+            actividad.idCliente,
             `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
             clienteInfo.dpi,
             clienteInfo.telefono,
@@ -208,11 +235,11 @@ const ReportePDF = ({ idActividad }) => {
           halign: 'center',
           valign: 'middle',
         },
-        columnStyles: {
-          0: { // Índice de la columna CODIGO
-            fillColor: [255, 255, 0], // Color amarillo
-          },
-        },
+        // columnStyles: {
+          // 0: { // Índice de la columna CODIGO
+            // fillColor: [126, 229, 237],
+          // },
+        // },
       };
 
       doc.autoTable({
@@ -234,7 +261,6 @@ const ReportePDF = ({ idActividad }) => {
       }
 
       doc.save('reporte_actividades.pdf');
-      setModalOpen(false);
     } catch (error) {
       console.error("Error al generar el PDF:", error);
     }
@@ -242,17 +268,9 @@ const ReportePDF = ({ idActividad }) => {
 
   return (
     <div>
-      <Button variant="contained" color="secondary" size="small" startIcon={<CloudDownloadOutlinedIcon />} sx={{ mt: 2 }} onClick={() => setModalOpen(true)}>
+      <Button variant="contained" color="secondary" size="small" startIcon={<CloudDownloadOutlinedIcon />} sx={{ mt: 2 }} onClick={handleGeneratePDF}>
         Generar PDF
       </Button>
-
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
-        <Paper sx={{ p: 2, width: 400, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-          <Button variant="contained" color="primary" onClick={handleGeneratePDF}>
-            Generar PDF
-          </Button>
-        </Paper>
-      </Modal>
     </div>
   );
 };

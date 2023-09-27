@@ -5,7 +5,7 @@ const localStorageUser = JSON.parse(localStorage.getItem('user'));
 const account = {
   displayName: localStorageUser ? localStorageUser.username : 'Nombre Predeterminado', // Cambia 'Nombre Predeterminado' por el valor predeterminado que desees
   email: localStorageUser ? localStorageUser.email : 'email@example.com', // Cambia 'email@example.com' por el valor predeterminado que desees
-  photoURL: '/assets/images/avatars/avatar_default.jpg',
+  photoURL: '/assets/images/avatars/avatar_2.jpg',
   role: localStorageUser ? localStorageUser.role : 'Rol Predeterminado', // Cambia 'Rol Predeterminado' por el valor predeterminado que desees
 };
 

@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Container, Typography, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Paper, } from '@mui/material';
-import moment from 'moment'; // Cambia la importación de moment
-import 'moment/locale/es'; // Importa el idioma si lo deseas
+import { Container, Typography, Card, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Paper, IconButton} from '@mui/material';
+import moment from 'moment';
+import Modal from 'react-modal';
+import EditIcon from '@mui/icons-material/Edit';
+import 'moment/locale/es';
 import 'moment-timezone';
 import Scrollbar from '../components/scrollbar';
 import PaymentsPDFGenerator from '../sections/@dashboard/pagopdf/PaymentsPDFGenerator';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import { obtenerPagos } from '../api/pagoApi';
+import { pagoUnion } from '../api/pagoApi';
+import { FormActualizarPago } from '../components/formulario/formPagoActualizar';
 
-const TABLE_HEAD = [
-  { id: 'idCliente', label: 'ID Cliente', alignRight: false },
-  { id: 'nombre', label: 'Nombre', alignRight: false },
-  { id: 'apellido', label: 'Apellido', alignRight: false },
-  { id: 'fechaPago', label: 'Fecha de Pago', alignRight: false },
-  { id: 'monto', label: 'Monto', alignRight: false },
-  { id: 'idActividad', label: 'ID Actividad', alignRight: false },
-  { id: 'noVoucher', label: 'No. Voucher', alignRight: false },
-  { id: 'tipoPago', label: 'Tipo de Pago', alignRight: false },
-  { id: 'nit', label: 'NIT', alignRight: false },
-  { id: 'descripcion', label: 'Descripción', alignRight: false },
-];
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -55,24 +46,47 @@ export default function ProductsPage() {
   const [order, setOrder] = useState('asc');
   const [selected] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [abrirModal, setAbrirModal] = useState(false);
+  const [seleccionar, setSeleccionar] = useState(null);
+  const [selectedRowData, setSelectedRowData] = useState(null);
 
   // Obtener el objeto de usuario desde localStorage
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   // Extraer el valor de 'tipoRol' del objeto de usuario
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
+  const TABLE_HEAD = [
+    { id: 'idCliente', label: 'ID Cliente', alignRight: false },
+    { id: 'nombre', label: 'Nombre', alignRight: false },
+    { id: 'apellido', label: 'Apellido', alignRight: false },
+    { id: 'fechaPago', label: 'Fecha de Pago', alignRight: false },
+    { id: 'monto', label: 'Monto', alignRight: false },
+    { id: 'idActividad', label: 'ID Actividad', alignRight: false },
+    { id: 'noVoucher', label: 'No. Voucher', alignRight: false },
+    { id: 'tipoPago', label: 'Tipo de Pago', alignRight: false },
+    { id: 'nit', label: 'NIT', alignRight: false },
+    { id: 'descripcion', label: 'Descripción', alignRight: false },
+  ];
+  // Agrega la columna "Editar" solo si el rol es "Administrador"
+  if (role === 'Administrador') {
+    TABLE_HEAD.push({ id: 'Editar', label: 'Editar', alignRight: false });
+  }
+
+  const getPagos = async () => {
+    try {
+      const responsePagos = await pagoUnion();
+      const pagoData = responsePagos.data;
+      setPagoData(pagoData);
+    } catch (error) {
+      console.error("Error al obtener los datos de los pagos:", error);
+    }
+  }
+
   useEffect(() => {
-    async function getPagos() {
-      try {
-        const responsePagos = await obtenerPagos();
-        const pagoData = responsePagos.data;
-        setPagoData(pagoData);
-      } catch (error) {
-        console.error('Error al obtener los datos de los pagos:', error);
-      }
-    } 
-    getPagos();
-  }, []);
+    if (pagoData.length === 0) {
+      getPagos();
+    }
+  }, [pagoData]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -90,6 +104,15 @@ export default function ProductsPage() {
     setPage(0);
     setFilterName(event.target.value);
   };
+  const handleOpenModal = (userData) => {
+    setSelectedRowData(userData);
+    setAbrirModal(true);
+  };
+  
+  const handleCloseModal = () => {
+    setSeleccionar(null);
+    setAbrirModal(false);
+  };
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - pagoData.length) : 0;
   const filteredUsers = applySortFilter(pagoData, getComparator(order, orderBy), filterName);
   const isNotFound = !filteredUsers.length && !!filterName;
@@ -103,6 +126,41 @@ export default function ProductsPage() {
         <Typography variant="h4" sx={{ mb: 5 }}>
           Pagos
         </Typography>
+
+        <Modal
+          isOpen={abrirModal}
+          onRequestClose={handleCloseModal}
+          style={{
+            overlay: {
+              zIndex: 1000,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+            content: {
+              top: '50%',
+              left: '50%',
+              right: 'auto',
+              bottom: 'auto',
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '8px',
+              padding: '20px',
+              width: '80%',
+              maxWidth: '800px',
+              maxHeight: '90%',
+              margin: 'auto',
+              overflow: 'auto',
+              marginTop: '35px',
+              marginBottom: '20px',
+              marginLeft: '20px',
+              marginRight: '20px',
+            },
+          }}
+        >
+          <FormActualizarPago
+            cliente={selectedRowData}
+            closeModal={handleCloseModal}
+            getPagos={getPagos}
+          />
+        </Modal>
 
         {role === 'Administrador' || role === 'Usuario' ? (
           <Card>
@@ -128,7 +186,7 @@ export default function ProductsPage() {
                       apellido,
                       fechaPago,
                       monto,
-                      idActividad,
+                      actividad,
                       noVoucher,
                       tipoPago,
                       nit,
@@ -142,11 +200,18 @@ export default function ProductsPage() {
                         <TableCell align="left">{apellido}</TableCell>
                         <TableCell align="left">{moment.utc(fechaPago).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{monto}</TableCell>
-                        <TableCell align="left">{idActividad}</TableCell>
+                        <TableCell align="left">{actividad.nombreActividad}</TableCell>
                         <TableCell align="left">{noVoucher}</TableCell>
                         <TableCell align="left">{tipoPago}</TableCell>
                         <TableCell align="left">{nit}</TableCell>
                         <TableCell align="left">{descripcion}</TableCell>
+                        {role === 'Administrador' ? (
+                          <TableCell>
+                            <IconButton onClick={() => handleOpenModal(row)}> {/* Pasa los datos de la fila */}
+                              <EditIcon /> {/* Puedes usar un ícono de edición o similar */}
+                            </IconButton>
+                          </TableCell>
+                          ) : null}
                       </TableRow>
                     );
                   })}

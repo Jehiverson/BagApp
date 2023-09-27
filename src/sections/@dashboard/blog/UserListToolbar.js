@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { styled, alpha } from '@mui/material/styles';
-import { Toolbar, Tooltip, IconButton, Typography, OutlinedInput, InputAdornment, Box } from '@mui/material';
+import { Toolbar, Button, Typography, OutlinedInput, InputAdornment, Box } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ReportePDF from './Reportes.pdf'; // Asegúrate de importar el componente ReportePDF adecuadamente
 import Iconify from '../../../components/iconify';
 
@@ -37,7 +38,6 @@ UserListToolbar.propTypes = {
 
 export default function UserListToolbar({ numSelected, filterName, onFilterName, onDeleteSelected, selected, }) {
   const showButtons = numSelected > 0;
-  console.log(selected);
   return (
     <StyledRoot
       sx={{
@@ -58,11 +58,11 @@ export default function UserListToolbar({ numSelected, filterName, onFilterName,
               <ReportePDF idActividad={selected} /> {/* Mueve el botón de ReportePDF aquí */}
             </div>
 
-            <Tooltip title="Completar">
-              <IconButton onClick={onDeleteSelected} sx={{ marginLeft: '10px' }}> {/* Agrega un margen izquierdo al botón Completar */}
-                <Iconify icon="eva:checkmark-circle-2-fill" />
-              </IconButton>
-            </Tooltip>
+            <div style={{marginTop: 15}}>
+              <Button variant="contained" color="success" size='small' startIcon={<CheckCircleIcon />} onClick={onDeleteSelected}>
+                Completar
+              </Button>
+            </div>
           </Box>
         </>
       ) : (

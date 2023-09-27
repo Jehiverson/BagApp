@@ -9,7 +9,7 @@ import { pagoUnion, cambioActividadPago } from '../../api/pagoApi';
 import { obtenerActividades } from '../../api/actividadApi';
 
 export const FormCambioEvento = () => {
-  const { handleSubmit, control } = useForm();
+  const { handleSubmit, control, reset } = useForm();
   const [pago, setPago] = useState([]);
   const [actividades, setActividades] = useState([]);
   const [selectedClientePago, setSelectedClientePago] = useState(null);
@@ -23,6 +23,10 @@ export const FormCambioEvento = () => {
 
       await cambioActividadPago(idPago, idActividad);
       toast.success("Cambio de Actividad Exitosa");
+
+      setSelectedClientePago(null);
+      setSelectedClienteCambio(null);
+      reset();
     } catch (error) {
       toast.error("Actualizacion Denegada");
       console.log(error);

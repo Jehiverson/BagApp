@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Button, Container, Stack, Typography, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, } from '@mui/material';
+import { Button, Container, Stack, Typography, TableContainer, TablePagination, Table, TableBody, TableRow, TableCell, Card, Paper, Checkbox, Input, InputAdornment, Button as MUIButton } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import Grid from '@mui/material/Grid';
 import { sentenceCase } from 'change-case';
 import moment from 'moment';
 import 'moment/locale/es';
 import 'moment-timezone';
+import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { toast } from 'react-toastify';
@@ -35,7 +36,6 @@ const TABLE_HEAD = [
   { id: 'estadoActividad', label: 'Estado', alignRight: false },
   { id: 'fechaInicio', label: 'Inicia', alignRight: false },
   { id: 'fechaFinal', label: 'Finaliza', alignRight: false },
-  { id: 'idCliente', label: 'Cliente', alignRight: false },
   { id: 'idPago', label: 'Pago', alignRight: false },
 ];
 function descendingComparator(a, b, orderBy) {
@@ -64,7 +64,30 @@ function applySortFilter(array, comparator, query) {
   }
   return stabilizedThis.map((el) => el[0]);
 }
+const StyledInput = styled(Input)(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: '4px',
+  border: '1px solid #ccc',
+  padding: theme.spacing(1),
+  marginRight: theme.spacing(1),
+  flex: 1,
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+  },
+  '&:focus': {
+    outline: 'none',
+    borderColor: theme.palette.primary.main,
+    boxShadow: `0 0 0 3px ${theme.palette.primary.light}`,
+  },
+}));
 
+const StyledButton = styled(MUIButton)(({ theme }) => ({
+  backgroundColor: theme.palette.primary.main,
+  color: theme.palette.primary.contrastText,
+  '&:hover': {
+    backgroundColor: theme.palette.primary.dark,
+  },
+}));
 export default function BlogPage() {
   const [actividadData, setactividadData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
@@ -78,6 +101,8 @@ export default function BlogPage() {
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const role = localStorageUser ? localStorageUser.tipoRol : null;
   const [apiCalled, setApiCalled] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
 
   Modal.setAppElement('#root');
   const localizer = momentLocalizer(moment);
@@ -108,7 +133,8 @@ export default function BlogPage() {
     const colors = ['blue', 'green', 'red', 'orange', 'purple', 'pink', 'teal'];
     const randomIndex = Math.floor(Math.random() * colors.length);
     return colors[randomIndex];
-  };  
+  }; 
+  
   const fetchEvents = async () => {
     try {
       const response = await obtenerActividades();
@@ -130,6 +156,8 @@ export default function BlogPage() {
           descripcionActividad: event.descripcionActividad,
           fechaEntrega: event.fechaEntrega,
           estado: event.estadoActividad,
+          precioActividad: event.precioActividad,
+          lugarActividad: event.lugarActividad,
           fechaInicio: moment.utc(event.fechaInicio).tz('America/Guatemala').toDate(),
           fechaFinal: moment.utc(event.fechaFinal).tz('America/Guatemala').toDate(),
           idCliente: event.idCliente,
@@ -137,16 +165,19 @@ export default function BlogPage() {
         }));
       setEvents(filteredEvents);
       setactividadData(response.data);
+      
     } catch (error) {
       console.error('Error fetching events:', error);
     }
-  };
+  };  
+  
   useEffect(() => {
     if (!apiCalled) {
       fetchEvents();
       setApiCalled(true);
     }
   }, [apiCalled]);
+
   // No Tocar ni eliminar
   const deleteEvent = async (idActividad) => {
     try {
@@ -160,6 +191,29 @@ export default function BlogPage() {
       toast.error('Error al eliminar la Actividad');
     }
   };
+  const handleCalendarNavigate = (newDate) => {
+    setSelectedDate(newDate);
+  };
+  
+  const handleSearch = () => {
+    if (searchTerm.trim() === '') {
+      // Si el término de búsqueda está vacío, no hacemos nada
+      return;
+    }
+  
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+  
+    // Buscamos eventos que coincidan con el término de búsqueda en el nombre
+    const matchingEvents = events.filter((event) =>
+      event.title.toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  
+    if (matchingEvents.length > 0) {
+      // Si se encontraron eventos coincidentes, ajustamos la vista del calendario
+      const startDate = moment(matchingEvents[0].fechaInicio); // Tomamos la fecha de inicio del primer evento coincidente
+      setSelectedDate(startDate.toDate()); // Establecemos la fecha seleccionada
+    }
+  };  
   
   const updateActivityStatus = async () => {
     if (selected.length === 1) {
@@ -261,24 +315,43 @@ export default function BlogPage() {
           }}
         >
           <div className="modal-content">
-            <FormIngresarActividad />
+            <FormIngresarActividad closeNewEventModal={closeNewEventModal} fetchEvents={fetchEvents} />
           </div>
         </Modal>
+        <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+          <StyledInput
+            type="text"
+            placeholder="Buscar actividad por nombre"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            startAdornment={
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', width: 20, height: 20 }} />
+              </InputAdornment>
+            }
+          />
+          <StyledButton variant="contained" onClick={handleSearch}>
+            Buscar
+          </StyledButton>
+        </div>
 
         <Calendar
-              localizer={localizer}
-              events={events}
-              messages={messages}
-              startAccessor="fechaInicio"
-              endAccessor="fechaFinal"
-              style={{ height: 500 }}
-              onSelectEvent={selectEvent}
-              eventPropGetter={event => ({
-                style: {
-                  backgroundColor: event.backgroundColor,
-                },
-              })}
-         />
+          localizer={localizer}
+          events={events}
+          messages={messages}
+          defaultDate={new Date()}
+          startAccessor="fechaInicio"
+          endAccessor="fechaFinal"
+          style={{ height: 500 }}
+          onSelectEvent={selectEvent}
+          eventPropGetter={(event) => ({
+            style: {
+              backgroundColor: event.backgroundColor,
+            },
+          })}
+          date={selectedDate} // Asegúrate de pasar el estado selectedDate aquí
+          onNavigate={handleCalendarNavigate}
+        />
 
         {role === 'Administrador' ? (
         <Card style={{marginTop: 20, height: 250, alignItems: 'center', p: 3, boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', backgroundColor: 'white'}}>
@@ -342,7 +415,6 @@ export default function BlogPage() {
                         </TableCell>
                         <TableCell align="left">{moment.utc(fechaInicio).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{moment.utc(fechaFinal).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
-                        <TableCell align="left">{row.cliente.nombreClient}</TableCell>
                         <TableCell align="left">{idPago}</TableCell>
                       </TableRow>
                     );
@@ -421,13 +493,14 @@ export default function BlogPage() {
                 </Button>
                 <Button
                   variant='contained'
-                  color='error' // Color rojo
+                  color='error'
                   onClick={() => deleteEvent(selectedEvent.idActividad)}
-                  startIcon={<DeleteIcon />} // Icono de basurero
+                  startIcon={<DeleteIcon />}
                 >
                   Eliminar Evento
                 </Button>
               </div>
+              <br />
               {showActualizar ? (
                 <div style={{marginTop: 15}}>
                   <Typography variant='h6'>Actualizar Datos de la Actividad</Typography>
@@ -436,7 +509,7 @@ export default function BlogPage() {
               ) : null}
             </div>
             ) : null}
-            {role === 'Cliente' || role === 'Usuario' ? (
+            {role === 'Cliente' || role === 'Usuario' || role === 'Administrador' ? (
               <div>
                 <Grid container spacing={2}>
                     <Grid item xs={12}>
@@ -450,9 +523,15 @@ export default function BlogPage() {
                       <Typography variant='body1' style={{ color: '#555' }}>
                       <span style={{ fontWeight: 'bold' }}>Este: </span>{convertirFechaAC(selectedEvent.fechaEntrega)}
                       </Typography>
+                      <Typography variant='body1' style={{ color: '#555' }}>
+                      <span style={{ fontWeight: 'bold' }}>Precio de Entrada: </span>Q{selectedEvent.precioActividad}
+                      </Typography>
+                      <Typography variant='body1' style={{ color: '#555' }}>
+                      <span style={{ fontWeight: 'bold' }}>Lugar de Actividad: </span>{selectedEvent.lugarActividad}
+                      </Typography>
                     </Paper>
                   </Grid>
-                  {role === 'Cliente' ? (
+                  {role === 'Administrador' ? (
                     <Grid item xs={12}>
                       <Button
                         variant='contained'
@@ -467,7 +546,7 @@ export default function BlogPage() {
               </div>
             ) : null}
             {showForm && (
-              <FormPago idActividad={selectedEvent.idActividad} />
+              <FormPago idActividad={selectedEvent.idActividad} setSelectedEvent={setSelectedEvent} />
             )}
           </Modal>
         )}

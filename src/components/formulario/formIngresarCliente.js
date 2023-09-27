@@ -2,6 +2,8 @@ import React from "react";
 import { useForm, Controller, useWatch, } from "react-hook-form";
 import { Button, TextField, Grid, RadioGroup, FormControlLabel, Radio, MenuItem, Typography, Card, CardContent } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { v4 as uuidv4 } from 'uuid';
+import Select from 'react-select';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {useAuth} from "../../context/AuthContext";
@@ -11,7 +13,7 @@ import { registrarCliente } from '../../api/clienteApi';
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
 
 export const FormIngresarCliente = ({closeModal}) => {
-  const { control, handleSubmit, register } = useForm();
+  const { control, handleSubmit, register, formState: { errors } } = useForm();
   const {signup, isAuthenticated, errors: registerError} = useAuth();
 
   const cantidadHijos = useWatch({
@@ -22,8 +24,8 @@ export const FormIngresarCliente = ({closeModal}) => {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const idCliente = Math.floor(Math.random() * 1000);
-      const tipoRol = "Cliente";
+      const idCliente = uuidv4();
+      const tipoRol = values.tipoRol.value;
       // Crear un objeto que contiene todos los datos del cliente y los hijos
       const clienteData = {
         idCliente,
@@ -41,7 +43,7 @@ export const FormIngresarCliente = ({closeModal}) => {
         childrenData: [], // Inicialmente, el array de datos de los hijos está vacío
       };
 
-      const registro = {
+      const user = {
         username: values.username,
         email: values.email,
         password: values.password,
@@ -53,7 +55,7 @@ export const FormIngresarCliente = ({closeModal}) => {
       if (values.children && values.children.length > 0) {
         clienteData.childrenData = values.children.map((child) => {
           return {
-            idHijo: Math.floor(Math.random() * 1000),
+            idHijo: uuidv4(),
             idCliente,
             edad: child.fechaNacimiento,
             genero: child.genero,
@@ -61,11 +63,9 @@ export const FormIngresarCliente = ({closeModal}) => {
         });
       }
   
-      console.log("Cliente y hijos:", clienteData);
-  
       // Enviar la solicitud para registrar al cliente con sus hijos
       await registrarCliente(clienteData);
-      await signup(registro);
+      await signup(user);
       toast.success("Cliente e hijos ingresados");
       closeModal();
     } catch (error) {
@@ -83,53 +83,145 @@ export const FormIngresarCliente = ({closeModal}) => {
     <form onSubmit={onSubmit}>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
+        <span>Nombre del Cliente</span>
           <TextField
             type="text"
-            {...register("nombreClient")}
-            label="Nombre del Cliente"
+            {...register("nombreClient", {
+              required: "Este campo es obligatorio",
+              minLength: {
+                value: 3,
+                message: "El Nombre debe tener al menos 3 letras",
+              },
+              pattern: {
+                value: /^[A-Za-z]+$/,
+                message: "El Nombre solo puede contener letras",
+              },
+            })}
+            placeholder="Nombre del Cliente"
             fullWidth
           />
+          {errors.nombreClient && (
+            <Typography variant="caption" color="error">
+              {errors.nombreClient.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
+        <span>Apellido del Cliente</span>
           <TextField
             type="text"
-            {...register("apellidoClient")}
-            label="Apellido del Cliente"
+            {...register("apellidoClient", {
+              required: "Este campo es obligatorio",
+              minLength: {
+                value: 3,
+                message: "El Apellido debe tener al menos 3 letras",
+              },
+              pattern: {
+                value: /^[A-Za-z]+$/,
+                message: "El Apellido solo puede contener letras",
+              },
+            })}
+            placeholder="Apellido del Cliente"
             fullWidth
           />
+          {errors.apellidoClient && (
+            <Typography variant="caption" color="error">
+              {errors.apellidoClient.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
           Fecha de Nacimiento
           <TextField
             type="date"
-            {...register("fechaNacimiento")}
+            {...register("fechaNacimiento", {
+              required: "Este campo es obligatorio",
+              validate: (value) => {
+                const today = new Date();
+                const birthDate = new Date(value);
+                const age = today.getFullYear() - birthDate.getFullYear();
+
+                if (Number.isNaN(age)) {
+                  return "Ingresa una fecha de nacimiento válida";
+                }
+
+                if (age < 18) {
+                  return "Debes ser mayor de 18 años";
+                }
+
+                return true;
+              },
+            })}
             fullWidth
           />
+          {errors.fechaNacimiento && (
+            <Typography variant="caption" color="error">
+              {errors.fechaNacimiento.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
             <span>Direccion del Cliente</span>
           <TextField
             type="text"
-            {...register("direccion")}
-            label="Direccion del Cliente"
+            {...register("direccion", {
+              pattern: {
+                value: /^[A-Za-z0-9\s.,#-]+$/,
+                message: "La dirección debe contener números, letras y caracteres especiales",
+              },
+            })}
+            placeholder="Direccion del Cliente"
             fullWidth
           />
+          {errors.direccion && (
+            <Typography variant="caption" color="error">
+              {errors.direccion.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
+        <span>DPI del Cliente</span>
           <TextField
             type="number"
-            {...register("dpi")}
+            {...register("dpi", {
+              required: "Este campo es obligatorio",
+              pattern: {
+                value: /^[0-9]{13}$/,
+                message: "El DPI debe contener exactamente 13 dígitos numéricos",
+              },
+              maxLength: {
+                value: 13,
+                message: "El DPI debe contener un máximo de 13 dígitos",
+              },
+            })}
             fullWidth
-            label="DPI"
+            placeholder="DPI"
           />
+          {errors.dpi && (
+            <Typography variant="caption" color="error">
+              {errors.dpi.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
+        <span>Telefono del Cliente</span>
           <TextField
             type="number"
-            {...register("telefono")}
-            label="Telefono del Cliente"
+            {...register("telefono", {
+              required: "Este campo es obligatorio",
+              pattern: {
+                value: /^[0-9]{8}$/,
+                message: "El Teléfono debe contener exactamente 8 dígitos numéricos",
+              },
+            })}
+            placeholder="Telefono del Cliente"
             fullWidth
           />
+          {errors.telefono && (
+            <Typography variant="caption" color="error">
+              {errors.telefono.message}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
           <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
@@ -195,7 +287,6 @@ export const FormIngresarCliente = ({closeModal}) => {
             />
           </div>
         </Grid>
-        {trabajando === "Si" && (
           <Grid item xs={12} sm={6}>
             <Controller
               name="ocupacion"
@@ -211,7 +302,6 @@ export const FormIngresarCliente = ({closeModal}) => {
               )}
             />
           </Grid>
-        )}
         <Grid item xs={12} sm={12}>
           <TextField
             type="number"
@@ -262,28 +352,95 @@ export const FormIngresarCliente = ({closeModal}) => {
             <CardContent>
               <Typography variant="h6">Registro de Usuario</Typography>
               <div style={{display: 'flex'}}>
+                <div style={{display: 'flex', flexDirection: 'column', marginRight: 10}}>
                 <TextField
                   type="text"
-                  {...register("username")}
+                  {...register("username", {
+                    required: "Este campo es obligatorio",
+                    minLength: {
+                      value: 3,
+                      message: "El nombre de usuario debe tener al menos 3 caracteres",
+                    },
+                    maxLength: {
+                      value: 20,
+                      message: "El nombre de usuario debe tener como máximo 20 caracteres",
+                    },
+                  })}
                   label="Nombre de Usuario"
                   fullWidth
-                  style={{marginRight: 15}}
+                  style={{marginRight: 5, width: 300}}
                 />
+                {errors.username && (
+                  <Typography variant="caption" color="error">
+                    {errors.username.message}
+                  </Typography>
+                )}
+                </div>
+                <div style={{display: 'flex', flexDirection: 'column'}}>
                 <TextField
                   type="text"
-                  {...register("email")}
+                  {...register("email", {
+                    required: "Este campo es obligatorio",
+                    pattern: {
+                      value: /^\S+@\S+$/i,
+                      message: "El correo electrónico no es válido",
+                    },
+                  })}
                   label="Correo Electronico"
-                  fullWidth
+                  style={{width: 315}}
                 />
+                {errors.email && (
+                  <Typography variant="caption" color="error">
+                    {errors.email.message}
+                  </Typography>
+                )}
+                </div>
               </div>
               <div style={{display: 'flex', marginTop: 15}}>
+                <div style={{display: 'flex', flexDirection: 'column'}}>
                 <TextField
-                  type="number"
-                  {...register("password")}
+                  type="password"
+                  {...register("password", {
+                    required: "Este campo es obligatorio",
+                    minLength: {
+                      value: 6,
+                      message: "La contraseña debe tener al menos 6 caracteres",
+                    },
+                  })}
                   label="Contraseña"
-                  fullWidth
-                  style={{marginRight: 15}}
+                  style={{marginRight: 15, width: 300}}
                 />
+                {errors.password && (
+                  <Typography variant="caption" color="error">
+                    {errors.password.message}
+                  </Typography>
+                )}
+                </div>
+                 <div style={{display: 'flex', flexDirection: 'column', width: 315, marginTop: 8}}>
+                 <Controller
+                    name="tipoRol"
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <Select
+                        {...field}
+                        options={[
+                          { value: "Cliente", label: "Cliente" },
+                          { value: "Usuario", label: "Usuario" },
+                          { value: "Administrador", label: "Administrador" }
+                        ]}
+                        placeholder="Selecciona un rol"
+                        menuPlacement='auto'
+                        maxMenuHeight={100}
+                      />
+                    )}
+                  />
+                  {errors.tipoRol && (
+                    <Typography variant="caption" color="error">
+                      Este campo es obligatorio
+                    </Typography>
+                  )}
+                 </div>
               </div>
             </CardContent>
           </Card>
