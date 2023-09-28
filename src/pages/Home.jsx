@@ -4,7 +4,7 @@ import { Container, Typography } from '@mui/material';
 import HomePageCliente from '../components/Diseños/Cliente';
 import HomePageAdmin from '../components/Diseños/Administrador';
 
-export default function PaginaDashboardApp() {
+export default function Home() {
 
   // Obtener el objeto de usuario desde localStorage
   const localStorageUser = JSON.parse(localStorage.getItem('user'));

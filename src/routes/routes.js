@@ -1,4 +1,5 @@
 import { useRoutes, Navigate, Outlet } from 'react-router-dom';
+import { BarLoader } from 'react-spinners';
 import DashboardLayout from '../layouts/dashboard';
 import Actividad from '../pages/Actividad';
 import Cliente from '../pages/Cliente';
@@ -50,7 +51,11 @@ export default function Router() {
   ]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <BarLoader color="#36D7B7" loading size={150} />
+      </div>
+    );
   }
 
   return routes;

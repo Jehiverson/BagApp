@@ -51,7 +51,7 @@ export const fetchClientes = (setClientes) => {
     });
 };
 
-export default function UserPage() {
+export default function Cliente() {
   ReactModal.setAppElement('#root'); 
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');

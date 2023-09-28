@@ -32,9 +32,7 @@ const HomePageCliente = () => {
       try {
         const response = await obtenerPagos();
         const pagoData = response.data;
-        console.log(pagoData);
-        const pagosCliente = pagoData.filter((pago) => parseInt(pago.idCliente) === parseInt(cliente));
-        console.log(pagosCliente);
+        const pagosCliente = pagoData.filter((pago) => parseInt(pago.idCliente, 10) === parseInt(cliente, 10));
         setPagos(pagosCliente);
       } catch (error) {
         console.error('Error al obtener los pagos:', error);

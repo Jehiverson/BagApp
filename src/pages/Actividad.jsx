@@ -88,7 +88,7 @@ const StyledButton = styled(MUIButton)(({ theme }) => ({
     backgroundColor: theme.palette.primary.dark,
   },
 }));
-export default function BlogPage() {
+export default function Actividad() {
   const [actividadData, setactividadData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');

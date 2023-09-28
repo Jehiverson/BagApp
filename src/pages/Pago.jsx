@@ -38,7 +38,7 @@ function applySortFilter(array, comparator, query) {
   }
   return stabilizedThis.map((el) => el[0]);
 }
-export default function ProductsPage() {
+export default function Pago() {
   const [pagoData, setPagoData] = useState([]);
   const [orderBy, setOrderBy] = useState('nombre');
   const [filterName, setFilterName] = useState('');
