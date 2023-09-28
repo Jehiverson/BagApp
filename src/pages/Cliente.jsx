@@ -1,18 +1,19 @@
-import { Helmet } from 'react-helmet-async';
-import { useState, useEffect } from 'react';
-import { Avatar, Card, Table, Stack, Paper, Button, TableRow, TableBody, TableCell, Container, Typography, TableContainer, TablePagination, IconButton, } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import ReactModal from 'react-modal';
-import moment from 'moment';
-import 'moment/locale/es';
-import 'moment-timezone';
-import Iconify from '../components/iconify';
-import Scrollbar from '../components/scrollbar';
-import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-import { obtenerClientes } from '../api/clienteApi';
-import { FormIngresarCliente } from '../components/formulario/formIngresarCliente';
-import { FormActualizarCliente } from '../components/formulario/formActualizarCliente';
+import { Helmet } from 'react-helmet-async'; // Importamos la biblioteca de react-helmet-async mas informacion visita la documentacion en este enlace: https://www.npmjs.com/package/react-helmet-async
+import { useState, useEffect } from 'react'; // Importamos hooks y useState y useEffect de react
+import { Avatar, Card, Table, Stack, Paper, Button, TableRow, TableBody, TableCell, Container, Typography, TableContainer, TablePagination, IconButton, } from '@mui/material'; // Importamos los diseño que usaremos de la biblioteca de @mui/material
+import EditIcon from '@mui/icons-material/Edit'; // Importamos un icono de @mui/material
+import ReactModal from 'react-modal'; // Importamos el Modal de la biblioteca de react-modal mas informacion visita la documentacion en este enlace: https://www.npmjs.com/package/react-modal
+import moment from 'moment'; // Importamos la biblioteca moment mas informacion visita la documentacion en este enlace: https://momentjs.com/
+import 'moment/locale/es'; // Importamos el horario local en español
+import 'moment-timezone'; // Importamos el tiempo en mi zona
+import Iconify from '../components/iconify'; // Importamos componente de mi aplicacion
+import Scrollbar from '../components/scrollbar'; // Importamos el Scrollbar de mi aplicacion
+import { UserListHead, UserListToolbar } from '../sections/@dashboard/user'; // Importamos componentes para mi Tabla
+import { obtenerClientes } from '../api/clienteApi'; // Importamos la API de cliente
+import { FormIngresarCliente } from '../components/formulario/formIngresarCliente'; // Importamos el formulario para registrar clientes
+import { FormActualizarCliente } from '../components/formulario/formActualizarCliente'; // Importamos el formulario para actualizar los datos de un cliente
 
+// Función para comparar elementos en orden descendente
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -22,11 +23,15 @@ function descendingComparator(a, b, orderBy) {
   }
   return 0;
 }
+
+// Función para obtener un comparador en función del orden y la columna
 function getComparator(order, orderBy) {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
-}
+};
+
+// Función para aplicar filtro y orden a una lista
 function applySortFilter(array, comparator, query) {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
@@ -53,6 +58,7 @@ export const fetchClientes = (setClientes) => {
 
 export default function Cliente() {
   ReactModal.setAppElement('#root'); 
+  // Estados para almacenar datos y control de la página
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');
   const [selected, setSelected] = useState([]);
@@ -83,33 +89,48 @@ export default function Cliente() {
   if (role === 'Administrador') {
     TABLE_HEAD.push({ id: 'Editar', label: 'Editar', alignRight: false });
   }
+
+  // Efecto que obtiene los datos de los clientes
   useEffect(() => {
     fetchClientes(setClientes);
   }, []);
 
+  // Función para manejar la solicitud de ordenación de columnas
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
+
+  // Función para cambiar de página
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
+
+  // Función para cambiar el número de filas por página
   const handleChangeRowsPerPage = (event) => {
     setPage(0);
     setRowsPerPage(parseInt(event.target.value, 10));
   };
+
+  // Función para filtrar por nombre
   const handleFilterByName = (event) => {
     setPage(0);
     setFilterName(event.target.value);
   };
+
+  // Funcion para abrir Modal
   const openNewEventModal = () => {
     setNewEventModalOpen(true);
   };
+
+  // Funcion para cerrar Modal
   const closeNewEventModal = () => {
     setNewEventModalOpen(false);
     fetchClientes(setClientes);
   };
+
+  // Funcion para abrir Modal
   const handleOpenModal = (userData) => {
     setSeleccionar(userData);
     setAbrirModal(true);
@@ -121,16 +142,24 @@ export default function Cliente() {
     fetchClientes(setClientes);
   };
 
+  // Calcula el número de filas vacías en la tabla
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - clientes.length) : 0;
+
+  // Aplica filtro y orden a los datos de pago
   const filteredUsers = applySortFilter(clientes, getComparator(order, orderBy), filterName);
+
+  // Verifica si no se encontraron resultados
   const isNotFound = !filteredUsers.length && !!filterName;
+
+  // Renderiza la interfaz de usuario
   return (
     <>
       <Helmet>
-        <title>Clientes</title>
+        <title>Clientes</title>  {/* Cambia el título de la página */}
       </Helmet>
 
       <Container>
+        {/* Renderizamos los Botones para crear Clientes si el rol es "Administrador" */}
         {role === 'Administrador' && (
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
@@ -175,12 +204,17 @@ export default function Cliente() {
           >
             <FormIngresarCliente closeModal={closeNewEventModal} />
         </ReactModal>
+
+        {/* Renderiza la tabla de pagos si el rol es "Administrador" o "Usuario" */}
         {role === 'Administrador' || role === 'Usuario' ? (
           <Card>
+          {/* Barra de herramientas de la lista de usuarios */}
           <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          {/* Barra de desplazamiento para la tabla */}
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
               <Table>
+                {/* Cabecera de la tabla */}
                 <UserListHead
                   order={order}
                   orderBy={orderBy}
@@ -190,6 +224,7 @@ export default function Cliente() {
                   onRequestSort={handleRequestSort}
                 />
                 <TableBody>
+                  {/* Renderiza filas de la tabla */}
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
                     const {
                       idCliente,
@@ -212,11 +247,13 @@ export default function Cliente() {
                           </Stack>
                         </TableCell>
                         <TableCell align="left">{apellidoClient}</TableCell>
+                        {/* Formatea y muestra la fecha en la zona horaria de Guatemala */}
                         <TableCell align="left">{moment.utc(fechaNacimiento).tz('America/Guatemala').format('YYYY-MM-DD')}</TableCell>
                         <TableCell align="left">{dpi}</TableCell>
                         <TableCell align="left">{estadoCivil}</TableCell>
                         <TableCell align="left">{trabajando}</TableCell>
                         <TableCell align="left">{cantidadHijos}</TableCell>
+                        {/* Renderiza un botón de edición si el rol es "Administrador" */}
                         {role === 'Administrador' ? (
                         <TableCell>
                           <IconButton onClick={() => handleOpenModal(row)}> {/* Agrega evento onClick */}
@@ -227,6 +264,7 @@ export default function Cliente() {
                       </TableRow>
                     );
                   })}
+                  {/* Renderiza filas vacías si es necesario */}
                   {emptyRows > 0 && (
                     <TableRow style={{ height: 53 * emptyRows }}>
                       <TableCell colSpan={8} />
@@ -234,6 +272,7 @@ export default function Cliente() {
                   )}
                 </TableBody>
 
+                {/* Muestra un mensaje si no se encontraron resultados */}
                 {isNotFound && (
                   <TableBody>
                     <TableRow>
@@ -255,6 +294,7 @@ export default function Cliente() {
               </Table>
             </TableContainer>
           </Scrollbar>
+          {/* Paginación de la tabla */}
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"

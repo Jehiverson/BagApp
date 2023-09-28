@@ -1,40 +1,26 @@
-## Minimal [(Free version)](https://minimal-kit-react.vercel.app/)
+# BagApp
 
-![license](https://img.shields.io/badge/license-MIT-blue.svg)
+BagApp es una aplicación de gestión que ofrece funcionalidades para tres roles diferentes: Administrador, Usuario y Cliente. El sistema está compuesto por cuatro módulos principales: Home, Pagos, Clientes y Actividades.
 
-> Free React Admin Dashboard made with Material-UI components and React.
+## Descripción
 
-![preview](public/assets/preview.jpg)
+BagApp es una aplicación web que proporciona una experiencia de usuario eficiente y amigable para la gestión de actividades y pagos. La aplicación se basa en componentes de Material-UI y utiliza la biblioteca React para ofrecer una interfaz moderna y receptiva.
 
-| [Minimal Free](https://minimal-kit-react.vercel.app/) | [Minimal](https://material-ui.com/store/items/minimal-dashboard/) |
-| ----------------------------------------------------- | :---------------------------------------------------------------- |
-| **6** Demo pages                                      | **50+** demo pages                                                |
-| -                                                     | ✓ Multi-language                                                  |
-| -                                                     | ✓ Dark/Light Mode 🌓                                              |
-| -                                                     | ✓ [More components](https://minimals.cc/components)               |
-| -                                                     | ✓ Next.js version                                                 |
-| -                                                     | ✓ TypeScript version                                              |
-| -                                                     | ✓ Design files (Figma & Sketch)                                   |
+## Captura de Pantalla
 
-## Page demo
+![Vista Previa](public/assets/images/preview.png)
 
-- [Dashboard](https://minimal-kit-react.vercel.app/dashboard/app)
-- [Users](https://minimal-kit-react.vercel.app/dashboard/user)
-- [Product](https://minimal-kit-react.vercel.app/dashboard/products)
-- [Blog](https://minimal-kit-react.vercel.app/dashboard/blog)
-- [Login](https://minimal-kit-react.vercel.app/login)
-- [Not Found](https://minimal-kit-react.vercel.app/404)
+## Características Destacadas
 
-## Getting started
+- **Gestión de Roles:** BagApp ofrece funcionalidades específicas para tres roles diferentes: Administrador, Usuario y Cliente.
 
-- Recommended `node js 16.x` and `npm 6+`. (suggestion v16.15.0)
-- Install dependencies: `npm install` / `yarn install`
-- Start the project: `npm run start` / `yarn start`
+- **Módulos Clave:** La aplicación se divide en cuatro módulos principales que abordan las necesidades esenciales: Home, Pagos, Clientes y Actividades.
 
-## License
+- **Requisitos:**
+  - Se recomienda Node.js 16.x y npm 6+ (se sugiere v16.15.0).
+  - Instale las dependencias: `npm install` o `yarn install`.
+  - Inicie el proyecto: `npm run start` o `yarn start`.
 
-Distributed under the MIT License. See [LICENSE](https://github.com/minimal-ui-kit/minimal.free/blob/main/LICENSE.md) for more information.
+## Contáctenos
 
-## Contact us
-
-Email Us: support@minimals.cc
+Si tiene alguna pregunta o necesita ayuda, no dude en ponerse en contacto con nosotros por correo electrónico: [aroldol005@gmail.com].
