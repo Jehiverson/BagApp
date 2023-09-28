@@ -1,32 +1,43 @@
-import React from "react";
-import { useForm, Controller, useWatch, } from "react-hook-form";
-import { Button, TextField, Grid, RadioGroup, FormControlLabel, Radio, MenuItem, Typography, Card, CardContent } from "@mui/material";
-import SendIcon from "@mui/icons-material/Send";
-import { v4 as uuidv4 } from 'uuid';
-import Select from 'react-select';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import {useAuth} from "../../context/AuthContext";
-import { registrarCliente } from '../../api/clienteApi';
+import React from "react"; // Importamos la biblioteca de react mas informacion visita la documentacion en este enlace: https://es.react.dev/learn
+import { useForm, Controller, useWatch, } from "react-hook-form"; // Importamos la biblioteca de react-hook-form mas informacion visita la documentacion en este enlace: https://react-hook-form.com/get-started
+import { Button, TextField, Grid, RadioGroup, FormControlLabel, Radio, MenuItem, Typography, Card, CardContent } from "@mui/material"; // Importamos la biblioteca de @mui/material mas informacion visita la documentacion en este enlace: https://mui.com/components/
+import SendIcon from "@mui/icons-material/Send"; // Importamos iconos de @mui/material
+import { v4 as uuidv4 } from 'uuid'; // Importamos la biblioteca uuid para generar identificadores  unicos visita la documentacion en este enlace: https://github.com/uuidjs/uuid
+import Select from 'react-select'; // Importamos la biblioteca de react-select mas informacion visita la documentacion en este enlace: https://react-select.com/home
+import { toast } from 'react-toastify'; // Importamos la biblioteca de react-toastify mas informacion visita la documentacion en este enalce: https://github.com/fkhadra/react-toastify#readme
+import 'react-toastify/dist/ReactToastify.css'; // Importamos el css de los estilos de react-toastify
+import {useAuth} from "../../context/AuthContext"; // Importamos el contexto de mi Aplicacion
+import { registrarCliente } from '../../api/clienteApi'; // Importamos las API que usaremos
 
-
+// Creamos las opciones de mi Select
 const estadosCiviles = ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Separado/a"];
+// Importa varias funciones y componentes de React y bibliotecas externas.
+export const FormIngresarCliente = ({closeModal}) => { // Pasamos una prop a mi componente
+// Define el componente Funcional FormIngresarCliente que recibe una prop llamada closeModal.
 
-export const FormIngresarCliente = ({closeModal}) => {
+  // Utiliza useForm para manejar el formulario y desestructura sus funciones y objetos relacionados.
   const { control, handleSubmit, register, formState: { errors } } = useForm();
-  const {signup, isAuthenticated, errors: registerError} = useAuth();
 
+  // Utiliza useAuth para gestionar la autenticación y desestructura las funciones y objetos necesarios.
+  const { signup, isAuthenticated, errors: registerError } = useAuth();
+
+  // Utiliza useWatch para observar cambios en el formulario.
   const cantidadHijos = useWatch({
     control,
     name: "cantidadHijos",
     defaultValue: 0,
   });
 
+  // Define una función onSubmit que se ejecuta cuando se envía el formulario.
   const onSubmit = handleSubmit(async (values) => {
     try {
+      // Genera un identificador único para el cliente.
       const idCliente = uuidv4();
+
+      // Obtiene el valor seleccionado en el campo tipoRol.
       const tipoRol = values.tipoRol.value;
-      // Crear un objeto que contiene todos los datos del cliente y los hijos
+
+      // Crea un objeto clienteData que contiene todos los datos del cliente y sus hijos (inicialmente vacío).
       const clienteData = {
         idCliente,
         nombreClient: values.nombreClient,
@@ -43,6 +54,7 @@ export const FormIngresarCliente = ({closeModal}) => {
         childrenData: [], // Inicialmente, el array de datos de los hijos está vacío
       };
 
+      // Crea un objeto de usuario con información de autenticación.
       const user = {
         username: values.username,
         email: values.email,
@@ -50,9 +62,10 @@ export const FormIngresarCliente = ({closeModal}) => {
         tipoRol,
         idCliente,
       }
-  
-      // Verificar si hay hijos para registrar
+
+      // Verifica si se ingresaron datos de hijos.
       if (values.children && values.children.length > 0) {
+        // Si hay hijos, mapea los datos de los hijos y crea objetos para cada uno.
         clienteData.childrenData = values.children.map((child) => {
           return {
             idHijo: uuidv4(),
@@ -62,18 +75,26 @@ export const FormIngresarCliente = ({closeModal}) => {
           };
         });
       }
-  
-      // Enviar la solicitud para registrar al cliente con sus hijos
+
+      // Envía una solicitud para registrar al cliente con sus hijos.
       await registrarCliente(clienteData);
+
+      // Registra al usuario en el sistema.
       await signup(user);
+
+      // Muestra una notificación de éxito.
       toast.success("Cliente e hijos ingresados");
+
+      // Cierra el modal.
       closeModal();
     } catch (error) {
       console.log(error);
+      // Muestra una notificación de error.
       toast.error("Cliente no ingresado");
     }
-  });  
+  }); 
 
+  // Utiliza useWatch para observar cambios en el campo "trabajando".
   const trabajando = useWatch({
     control,
     name: "trabajando",

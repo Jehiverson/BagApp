@@ -1,19 +1,23 @@
-// @mui
+// Importación de componentes y funciones desde MUI (Material-UI)
 import { alpha, useTheme } from '@mui/material/styles';
 import { GlobalStyles } from '@mui/material';
-// utils
+
+// Importación de una función de utilidad para estilos de fondo desde un archivo externo
 import { bgBlur } from '../../utils/cssStyles';
 
 // ----------------------------------------------------------------------
 
+// Componente funcional que devuelve un conjunto de estilos globales para gráficos personalizados
 export default function StyledChart() {
+  // Obtención del tema actual de Material-UI
   const theme = useTheme();
 
+  // Definición de estilos globales utilizando GlobalStyles de MUI
   const inputGlobalStyles = (
     <GlobalStyles
       styles={{
         '.apexcharts-canvas': {
-          // Tooltip
+          // Estilos para el tooltip
           '.apexcharts-xaxistooltip': {
             ...bgBlur({ color: theme.palette.background.default }),
             border: 0,
@@ -37,7 +41,7 @@ export default function StyledChart() {
             },
           },
 
-          // Legend
+          // Estilos para la leyenda (legend)
           '.apexcharts-legend': {
             padding: 0,
           },
@@ -57,5 +61,6 @@ export default function StyledChart() {
     />
   );
 
+  // Devolver los estilos globales para su uso en otros componentes
   return inputGlobalStyles;
 }

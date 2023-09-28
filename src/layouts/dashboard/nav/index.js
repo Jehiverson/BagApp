@@ -1,23 +1,21 @@
+// Importa las dependencias necesarias.
 import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-// @mui
 import { styled, alpha } from '@mui/material/styles';
 import { Box, Link, Drawer, Typography, Avatar } from '@mui/material';
-// mock
-import account from '../../../_mock/account';
-// hooks
-import useResponsive from '../../../hooks/useResponsive';
-import { useAuth } from '../../../context/AuthContext';
-// components
-import Logo from '../../../components/logo';
-import Scrollbar from '../../../components/scrollbar';
-import NavSection from '../../../components/nav-section';
-//
-import navConfig from './config';
+import account from '../../../_mock/account'; // Datos ficticios de la cuenta
+import useResponsive from '../../../hooks/useResponsive'; // Hook personalizado para la respuesta
+import { useAuth } from '../../../context/AuthContext'; // Contexto de autenticación
+import Logo from '../../../components/logo'; // Componente de logotipo
+import Scrollbar from '../../../components/scrollbar'; // Componente personalizado de barra de desplazamiento
+import NavSection from '../../../components/nav-section'; // Componente de sección de navegación
+import navConfig from './config'; // Configuración de navegación
 
+// Tamaños de la barra de navegación.
 const NAV_WIDTH = 280;
 
+// Estilos personalizados para la sección de cuenta.
 const StyledAccount = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -26,45 +24,51 @@ const StyledAccount = styled('div')(({ theme }) => ({
   backgroundColor: alpha(theme.palette.grey[500], 0.12),
 }));
 
+// Propiedades esperadas para el componente Nav.
 Nav.propTypes = {
-  openNav: PropTypes.bool,
-  onCloseNav: PropTypes.func,
+  openNav: PropTypes.bool, // Indica si el panel de navegación está abierto.
+  onCloseNav: PropTypes.func, // Función para cerrar el panel de navegación.
 };
 
 export default function Nav({ openNav, onCloseNav }) {
+  // Obtiene la ubicación actual de la ruta.
   const { pathname } = useLocation();
-  const {user} = useAuth();
+  // Obtiene el usuario autenticado del contexto de autenticación.
+  const { user } = useAuth();
+  // Verifica si se está utilizando una pantalla de escritorio.
   const isDesktop = useResponsive('up', 'lg');
 
   useEffect(() => {
+    // Cierra el panel de navegación si está abierto cuando cambia la ubicación.
     if (openNav) {
       onCloseNav();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Obtener el objeto de usuario desde localStorage
+  // Obtiene información del usuario desde el almacenamiento local.
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
-  // Extraer el valor de 'tipoRol' del objeto de usuario
+  // Extrae el valor del rol del usuario.
   const role = localStorageUser ? localStorageUser.tipoRol : null;
-  // Obtén el rol del usuario del localStorage
+  // Obtiene el nombre de usuario desde el almacenamiento local o el contexto de autenticación.
   const username = localStorageUser ? localStorageUser.username : user.username;
 
+  // Define los módulos permitidos según el rol del usuario.
   const allowedModulesByRole = {
     Administrador: ['home', 'Clientes', 'Pagos', 'Actividades'],
     Cliente: ['home', 'Actividades'],
     Usuario: ['home', 'Clientes', 'Pagos', 'Actividades'],
-  };  
+  };
 
+  // Filtra la configuración de navegación según los módulos permitidos para el rol actual.
   const filteredNavConfig = navConfig.filter((option) => {
-    // Si el título está en la lista de módulos permitidos para el rol actual, muestra la opción
     if (allowedModulesByRole[role]?.includes(option.title)) {
       return true;
     }
-    // Oculta la opción si no está permitida
     return false;
-  });   
+  });
 
+  // Contenido a renderizar en el panel de navegación.
   const renderContent = (
     <Scrollbar
       sx={{
@@ -94,6 +98,7 @@ export default function Nav({ openNav, onCloseNav }) {
         </Link>
       </Box>
 
+      {/* Componente de sección de navegación */}
       <NavSection data={filteredNavConfig} />
 
       <Box sx={{ flexGrow: 1 }} />
@@ -109,6 +114,7 @@ export default function Nav({ openNav, onCloseNav }) {
       }}
     >
       {isDesktop ? (
+        // Panel de navegación permanente para escritorio.
         <Drawer
           open
           variant="permanent"
@@ -123,6 +129,7 @@ export default function Nav({ openNav, onCloseNav }) {
           {renderContent}
         </Drawer>
       ) : (
+        // Panel de navegación desplegable para dispositivos móviles.
         <Drawer
           open={openNav}
           onClose={onCloseNav}

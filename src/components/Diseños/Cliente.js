@@ -1,22 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Grid, Card, CardContent, Container } from '@mui/material';
 import moment from 'moment';
-import { obtenerActividades } from '../../api/actividadApi';
-import { obtenerPagos } from '../../api/pagoApi';
+import { obtenerActividades } from '../../api/actividadApi'; // Importación de la función para obtener actividades desde una API
+import { obtenerPagos } from '../../api/pagoApi'; // Importación de la función para obtener pagos desde una API
 
 const HomePageCliente = () => {
+  // Estado local para almacenar las actividades pasadas
   const [actividadesPasadas, setActividadesPasadas] = useState([]);
-  const [hoy] = useState(moment()); // Obtener la fecha actual
+  // Estado local para almacenar la fecha actual utilizando Moment.js
+  const [hoy] = useState(moment());
+  // Obtiene el usuario almacenado en el localStorage, si existe
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const user = localStorageUser ? localStorageUser.username : null;
   const cliente = localStorageUser ? localStorageUser.idCliente : null;
-  console.log(cliente);
+
+  // Estado local para almacenar las actividades
   const [actividades, setActividades] = useState([]);
+  // Estado local para almacenar los pagos
   const [pagos, setPagos] = useState([]);
+  // Estado local para rastrear si los datos ya se cargaron
   const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    // Función para obtener actividades
+    // Función asincrónica para obtener actividades desde la API
     async function fetchActividades() {
       try {
         const responseActividades = await obtenerActividades();
@@ -27,11 +33,12 @@ const HomePageCliente = () => {
       }
     }
 
-    // Función para obtener pagos
+    // Función asincrónica para obtener pagos desde la API
     async function fetchPagos() {
       try {
         const response = await obtenerPagos();
         const pagoData = response.data;
+        // Filtra los pagos del cliente actual
         const pagosCliente = pagoData.filter((pago) => parseInt(pago.idCliente, 10) === parseInt(cliente, 10));
         setPagos(pagosCliente);
       } catch (error) {
@@ -39,20 +46,20 @@ const HomePageCliente = () => {
       }
     }
 
-    // Verificar si los datos ya se cargaron antes de ejecutar las llamadas
+    // Verifica si los datos ya se cargaron antes de ejecutar las llamadas a la API
     if (!dataLoaded) {
-      fetchActividades();
-      fetchPagos();
-      setDataLoaded(true); // Marcar que los datos se han cargado
+      fetchActividades(); // Llama a la función para obtener actividades
+      fetchPagos(); // Llama a la función para obtener pagos
+      setDataLoaded(true); // Marca que los datos se han cargado
     }
 
-    // Calcula las actividades pasadas y filtra las actividades
+    // Calcula las actividades pasadas y las filtra
     const actividadesFiltradas = actividades.filter((actividad) => {
       const fechaEntrega = moment(actividad.fechaEntrega);
       return fechaEntrega.isAfter(hoy);
     });
 
-    setActividadesPasadas(actividadesFiltradas);
+    setActividadesPasadas(actividadesFiltradas); // Actualiza el estado local con las actividades pasadas
   }, [hoy, actividades, cliente, dataLoaded]);
 
   // Filtra los pagos del mes actual
@@ -60,6 +67,7 @@ const HomePageCliente = () => {
     const createdAt = moment(pago.createdAt);
     return createdAt.isSame(hoy, 'month');
   });
+
   // Filtra las actividades que aún no han pasado
   const actividadesFiltradas = actividades.filter((actividad) => {
     const fechaEntrega = moment(actividad.fechaEntrega);
@@ -75,7 +83,7 @@ const HomePageCliente = () => {
     return actividadesPasadasDelMes;
   };
 
-  // Obtén las actividades pasadas del mes actual
+  // Obtiene las actividades pasadas del mes actual
   const actividadesPasadasDelMes = obtenerActividadesPasadasDelMes();
 
   return (
@@ -167,9 +175,9 @@ function getColorForActivity(index) {
 
 // Función para convertir una fecha UTC a la fecha local de América Central
 function convertirFechaAC(fechaUTC) {
-    const fechaLocal = new Date(fechaUTC);
-    const options = { timeZone: 'America/El_Salvador', year: 'numeric', month: 'numeric', day: 'numeric' };
-    return fechaLocal.toLocaleString(undefined, options);
+  const fechaLocal = new Date(fechaUTC);
+  const options = { timeZone: 'America/El_Salvador', year: 'numeric', month: 'numeric', day: 'numeric' };
+  return fechaLocal.toLocaleString(undefined, options);
 }
 
 export default HomePageCliente;

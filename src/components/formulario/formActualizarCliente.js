@@ -10,10 +10,10 @@ import {
   FormControlLabel,
   Radio,
   MenuItem,
-} from "@mui/material";
+} from "@mui/material"; // Importación de componentes de Material-UI. Documentación: https://mui.com/components/text-fields/
 import SendIcon from "@mui/icons-material/Send";
-import { toast } from "react-toastify";
-import { actualizarCliente } from "../../api/clienteApi";
+import { toast } from "react-toastify"; // Importación de la biblioteca react-toastify para notificaciones. Documentación: https://github.com/fkhadra/react-toastify
+import { actualizarCliente } from "../../api/clienteApi"; // Importación de la función para actualizar clientes desde una API personalizada.
 
 const estadosCiviles = [
   "Soltero/a",
@@ -37,11 +37,11 @@ export const FormActualizarCliente = ({ cliente, closeModal }) => {
     try {
       // Realiza la actualización del cliente con los nuevos datos
       await actualizarCliente(values.idCliente, values);
-      toast.success("Cliente actualizado exitosamente");
+      toast.success("Cliente actualizado exitosamente"); // Muestra una notificación de éxito
       closeModal(); // Cierra el modal después de la actualización
     } catch (error) {
       console.error("Error al actualizar el cliente:", error);
-      toast.error("Error al actualizar el cliente");
+      toast.error("Error al actualizar el cliente"); // Muestra una notificación de error
     }
   });
 
@@ -58,27 +58,27 @@ export const FormActualizarCliente = ({ cliente, closeModal }) => {
         {...register("apellidoClient")}
         label="Apellido del Cliente"
         fullWidth
-        style={{marginTop: 15}}
+        style={{ marginTop: 15 }}
       />
       <TextField
         type="date"
         {...register("fechaNacimiento")}
         fullWidth
-        style={{marginTop: 15}}
+        style={{ marginTop: 15 }}
       />
       <TextField
         type="text"
         {...register("dpi")}
         fullWidth
         label="DPI"
-        style={{marginTop: 15}}
+        style={{ marginTop: 15 }}
       />
       <TextField
         type="text"
         {...register("telefono")}
         label="Telefono del Cliente"
         fullWidth
-        style={{marginTop: 15}}
+        style={{ marginTop: 15 }}
       />
       <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
         <h5 style={{ margin: "0", marginRight: "16px" }}>Genero:</h5>

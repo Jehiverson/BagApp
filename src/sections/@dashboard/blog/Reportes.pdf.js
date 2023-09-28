@@ -5,8 +5,9 @@ import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from './pdf/logo_pdf.png';
-import {datosPagos} from '../../../api/pagoApi';
+import { datosPagos } from '../../../api/pagoApi';
 
+// Función para calcular la edad a partir de la fecha de nacimiento
 function calcularEdad(fechaNacimiento) {
   const fechaNacimientoDate = new Date(fechaNacimiento);
   const fechaActual = new Date();
@@ -15,11 +16,16 @@ function calcularEdad(fechaNacimiento) {
   return Math.abs(edad.getUTCFullYear() - 1970);
 }
 
+// Componente ReportePDF
 const ReportePDF = ({ idActividad }) => {
+  // Estado para almacenar los datos de la actividad
   const [actividad, setActividad] = useState([]);
+  
+  // Obtener el usuario actual del almacenamiento local
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const username = localStorageUser ? localStorageUser.username : null;
 
+  // Función para obtener los datos de la actividad
   const obtenerActividad = async () => {
     try {
       const response = await datosPagos();
@@ -36,33 +42,37 @@ const ReportePDF = ({ idActividad }) => {
       console.log(error);
     }
   };
+
+  // Efecto para cargar los datos de la actividad
   useEffect(() => {
-    obtenerActividad ();
+    obtenerActividad();
   }, [idActividad]);
 
+  // Función para obtener el título del documento PDF
   const getTitle = () => 'BANCO DE ALIMENTOS DE GUATEMALA - BASE DE DATOS DE BENEFICIARIOS';
+
+  // Función para obtener el título del informe con detalles de la actividad
   const getTitulo = () => {
     let nombreActividad = '';
     let fechaEntrega = '';
     let lugarActividad = '';
 
     if (actividad.length > 0) {
-        const primeraActividad = actividad[0].actividad;
+      const primeraActividad = actividad[0].actividad;
 
-        if (primeraActividad) {
-            nombreActividad = primeraActividad.nombreActividad;
+      if (primeraActividad) {
+        nombreActividad = primeraActividad.nombreActividad;
+        lugarActividad = primeraActividad.lugarActividad;
 
-            lugarActividad = primeraActividad.lugarActividad;
+        // Obtener la fecha de entrega en formato UTC
+        const fechaEntregaUTC = new Date(primeraActividad.fechaEntrega);
 
-            // Obtener la fecha de entrega en formato UTC
-            const fechaEntregaUTC = new Date(primeraActividad.fechaEntrega);
+        // Definir la zona horaria de América Central
+        const zonaHorariaAmericaCentral = 'America/Guatemala';
 
-            // Definir la zona horaria de América Central
-            const zonaHorariaAmericaCentral = 'America/Guatemala';
-
-            // Formatear la fecha a la zona horaria de América Central (solo fecha y hora)
-            fechaEntrega = format(fechaEntregaUTC, 'yyyy-MM-dd', { timeZone: zonaHorariaAmericaCentral });
-        }
+        // Formatear la fecha a la zona horaria de América Central (solo fecha y hora)
+        fechaEntrega = format(fechaEntregaUTC, 'yyyy-MM-dd', { timeZone: zonaHorariaAmericaCentral });
+      }
     }
 
     const nombreOrganizacion = `Nombre de la Actividad: ${nombreActividad}`;
@@ -70,8 +80,9 @@ const ReportePDF = ({ idActividad }) => {
     const responsabilidadProyecto = `PDF Generado por: ${username}`;
 
     return `${nombreOrganizacion}          Fecha entrega: ${fechaEntrega}         ${lugarEntrega}          ${responsabilidadProyecto}`;
-};
+  };
 
+  // Función para manejar la generación del PDF
   const handleGeneratePDF = () => {
     console.log(actividad);
     try {
@@ -152,74 +163,76 @@ const ReportePDF = ({ idActividad }) => {
 
       let autoIncrement = 0;
 
-      const tableData = Array.isArray(actividad) ? actividad.map((actividad) => {
-        const clienteInfo = actividad.cliente; 
-        autoIncrement += 1;
-        if (clienteInfo) {
-          const birthDate = new Date(clienteInfo.fechaNacimiento);
-          const age = currentDate.getFullYear() - birthDate.getFullYear();
-          const formattedAge = Number.isNaN(age) ? '' : age.toString();
-      
-          const clienteHijos = clienteInfo.hijos || [];
-          // Inicializa contadores para cada categoría
-          const categorias = {
-            '0-2 años Hombre': 0,
-            '0-2 años Mujer': 0,
-            '3-5 años Hombre': 0,
-            '3-5 años Mujer': 0,
-            '6-18 años Hombre': 0,
-            '6-18 años Mujer': 0,
-            '19-49 años Hombre': 0,
-            '19-49 años Mujer': 0,
-            '50+ años Hombre': 0,
-            '50+ años Mujer': 0,
-          };
-          // Recorre los hijos del cliente y actualiza las categorías
-          clienteHijos.forEach((hijo) => {
-            const edadHijo = calcularEdad(hijo.edad);
-            const generoHijo = hijo.genero;
-      
-            if (edadHijo >= 0 && edadHijo <= 2) {
-              categorias[generoHijo === 'Hombre' ? '0-2 años Hombre' : '0-2 años Mujer'] += 1;
-            } else if (edadHijo >= 3 && edadHijo <= 5) {
-              categorias[generoHijo === 'Hombre' ? '3-5 años Hombre' : '3-5 años Mujer'] += 1;
-            } else if (edadHijo >= 6 && edadHijo <= 18) {
-              categorias[generoHijo === 'Hombre' ? '6-18 años Hombre' : '6-18 años Mujer'] += 1;
-            } else if (edadHijo >= 19 && edadHijo <= 49) {
-              categorias[generoHijo === 'Hombre' ? '19-49 años Hombre' : '19-49 años Mujer'] += 1;
-            } else {
-              categorias[generoHijo === 'Hombre' ? '50+ años Hombre' : '50+ años Mujer'] += 1;
+      const tableData = Array.isArray(actividad)
+        ? actividad.map((actividad) => {
+            const clienteInfo = actividad.cliente;
+            autoIncrement += 1;
+            if (clienteInfo) {
+              const birthDate = new Date(clienteInfo.fechaNacimiento);
+              const age = currentDate.getFullYear() - birthDate.getFullYear();
+              const formattedAge = Number.isNaN(age) ? '' : age.toString();
+
+              const clienteHijos = clienteInfo.hijos || [];
+              // Inicializa contadores para cada categoría
+              const categorias = {
+                '0-2 años Hombre': 0,
+                '0-2 años Mujer': 0,
+                '3-5 años Hombre': 0,
+                '3-5 años Mujer': 0,
+                '6-18 años Hombre': 0,
+                '6-18 años Mujer': 0,
+                '19-49 años Hombre': 0,
+                '19-49 años Mujer': 0,
+                '50+ años Hombre': 0,
+                '50+ años Mujer': 0,
+              };
+              // Recorre los hijos del cliente y actualiza las categorías
+              clienteHijos.forEach((hijo) => {
+                const edadHijo = calcularEdad(hijo.edad);
+                const generoHijo = hijo.genero;
+
+                if (edadHijo >= 0 && edadHijo <= 2) {
+                  categorias[generoHijo === 'Hombre' ? '0-2 años Hombre' : '0-2 años Mujer'] += 1;
+                } else if (edadHijo >= 3 && edadHijo <= 5) {
+                  categorias[generoHijo === 'Hombre' ? '3-5 años Hombre' : '3-5 años Mujer'] += 1;
+                } else if (edadHijo >= 6 && edadHijo <= 18) {
+                  categorias[generoHijo === 'Hombre' ? '6-18 años Hombre' : '6-18 años Mujer'] += 1;
+                } else if (edadHijo >= 19 && edadHijo <= 49) {
+                  categorias[generoHijo === 'Hombre' ? '19-49 años Hombre' : '19-49 años Mujer'] += 1;
+                } else {
+                  categorias[generoHijo === 'Hombre' ? '50+ años Hombre' : '50+ años Mujer'] += 1;
+                }
+              });
+
+              return [
+                autoIncrement,
+                actividad.idCliente,
+                `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
+                clienteInfo.dpi,
+                clienteInfo.telefono,
+                clienteInfo.genero,
+                formattedAge,
+                clienteInfo.estadoCivil,
+                clienteInfo.ocupacion,
+                clienteInfo.trabajando,
+                categorias['0-2 años Hombre'],
+                categorias['0-2 años Mujer'],
+                categorias['3-5 años Hombre'],
+                categorias['3-5 años Mujer'],
+                categorias['6-18 años Hombre'],
+                categorias['6-18 años Mujer'],
+                categorias['19-49 años Hombre'],
+                categorias['19-49 años Mujer'],
+                categorias['50+ años Hombre'],
+                categorias['50+ años Mujer'],
+                clienteInfo.cantidadHijos,
+                clienteInfo.direccion,
+              ];
             }
-          });
-        
-          return [
-            autoIncrement,
-            actividad.idCliente,
-            `${clienteInfo.nombreClient} ${clienteInfo.apellidoClient}`,
-            clienteInfo.dpi,
-            clienteInfo.telefono,
-            clienteInfo.genero,
-            formattedAge,
-            clienteInfo.estadoCivil,
-            clienteInfo.ocupacion,
-            clienteInfo.trabajando,
-            categorias['0-2 años Hombre'],
-            categorias['0-2 años Mujer'],
-            categorias['3-5 años Hombre'],
-            categorias['3-5 años Mujer'],
-            categorias['6-18 años Hombre'],
-            categorias['6-18 años Mujer'],
-            categorias['19-49 años Hombre'],
-            categorias['19-49 años Mujer'],
-            categorias['50+ años Hombre'],
-            categorias['50+ años Mujer'],
-            clienteInfo.cantidadHijos,
-            clienteInfo.direccion
-          ];
-        }
-        // Devuelve un valor vacío o null, según tus necesidades
-        return null;
-      }).filter((value) => value !== null) : [];      
+            // Devuelve un valor vacío o null, según tus necesidades
+            return null;
+          })
+        : [];
 
       const tableOptions = {
         margin: { top: watermarkY + watermarkHeight + 30 },
@@ -235,11 +248,6 @@ const ReportePDF = ({ idActividad }) => {
           halign: 'center',
           valign: 'middle',
         },
-        // columnStyles: {
-          // 0: { // Índice de la columna CODIGO
-            // fillColor: [126, 229, 237],
-          // },
-        // },
       };
 
       doc.autoTable({
@@ -252,14 +260,15 @@ const ReportePDF = ({ idActividad }) => {
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i += 1) {
         doc.setPage(i);
-        
+
         // Calcula la posición X para la esquina superior derecha
         const pageWidth = doc.internal.pageSize.width;
         const positionX = pageWidth - 30; // Ajusta el valor "40" para alejarlo más a la derecha
-        
+
         doc.text(positionX, 10, `Página ${i} de ${totalPages}`);
       }
 
+      // Guardar el PDF con un nombre específico
       doc.save('reporte_actividades.pdf');
     } catch (error) {
       console.error("Error al generar el PDF:", error);
@@ -268,6 +277,7 @@ const ReportePDF = ({ idActividad }) => {
 
   return (
     <div>
+      {/* Botón para generar el PDF */}
       <Button variant="contained" color="secondary" size="small" startIcon={<CloudDownloadOutlinedIcon />} sx={{ mt: 2 }} onClick={handleGeneratePDF}>
         Generar PDF
       </Button>

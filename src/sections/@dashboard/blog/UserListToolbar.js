@@ -5,51 +5,55 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ReportePDF from './Reportes.pdf'; // Asegúrate de importar el componente ReportePDF adecuadamente
 import Iconify from '../../../components/iconify';
 
+// Estilo personalizado para el componente Toolbar llamado StyledRoot
 const StyledRoot = styled(Toolbar)(({ theme }) => ({
-  height: 96,
-  display: 'flex',
-  justifyContent: 'space-between',
+  height: 96, // Altura de la barra de herramientas
+  display: 'flex', // Muestra los elementos en fila
+  justifyContent: 'space-between', // Espacio entre elementos
   alignItems: 'center', // Alinea verticalmente los elementos
-  padding: theme.spacing(0, 1, 0, 3),
+  padding: theme.spacing(0, 1, 0, 3), // Espaciado personalizado
 }));
 
+// Estilo personalizado para el componente OutlinedInput llamado StyledSearch
 const StyledSearch = styled(OutlinedInput)(({ theme }) => ({
-  width: 240,
+  width: 240, // Ancho predeterminado
   transition: theme.transitions.create(['box-shadow', 'width'], {
     easing: theme.transitions.easing.easeInOut,
     duration: theme.transitions.duration.shorter,
   }),
   '&.Mui-focused': {
-    width: 320,
-    boxShadow: theme.customShadows.z8,
+    width: 320, // Ancho cuando el campo está enfocado
+    boxShadow: theme.customShadows.z8, // Sombra cuando el campo está enfocado
   },
   '& fieldset': {
     borderWidth: `1px !important`,
-    borderColor: `${alpha(theme.palette.grey[500], 0.32)} !important`,
+    borderColor: `${alpha(theme.palette.grey[500], 0.32)} !important`, // Borde personalizado
   },
 }));
 
+// Definición de los tipos de propiedades esperadas por el componente
 UserListToolbar.propTypes = {
-  numSelected: PropTypes.number,
-  filterName: PropTypes.string,
-  onFilterName: PropTypes.func,
-  onDeleteSelected: PropTypes.func,
+  numSelected: PropTypes.number, // Número de elementos seleccionados
+  filterName: PropTypes.string, // Valor del campo de búsqueda
+  onFilterName: PropTypes.func, // Función para manejar el cambio en el campo de búsqueda
+  onDeleteSelected: PropTypes.func, // Función para manejar la eliminación de elementos seleccionados
 };
 
-export default function UserListToolbar({ numSelected, filterName, onFilterName, onDeleteSelected, selected, }) {
-  const showButtons = numSelected > 0;
+// Función principal del componente UserListToolbar
+export default function UserListToolbar({ numSelected, filterName, onFilterName, onDeleteSelected, selected }) {
+  const showButtons = numSelected > 0; // Determina si se deben mostrar los botones
   return (
     <StyledRoot
       sx={{
         ...(showButtons && {
-          color: 'primary.main',
-          bgcolor: 'primary.lighter',
+          color: 'primary.main', // Cambia el color del texto si hay elementos seleccionados
+          bgcolor: 'primary.lighter', // Cambia el fondo si hay elementos seleccionados
         }),
       }}
     >
-      {showButtons ? (
+      {showButtons ? ( // Mostrar botones si hay elementos seleccionados
         <>
-        <Typography component="div" variant="subtitle1">
+          <Typography component="div" variant="subtitle1">
             {numSelected} selected
           </Typography>
           
@@ -58,14 +62,14 @@ export default function UserListToolbar({ numSelected, filterName, onFilterName,
               <ReportePDF idActividad={selected} /> {/* Mueve el botón de ReportePDF aquí */}
             </div>
 
-            <div style={{marginTop: 15}}>
+            <div style={{ marginTop: 15 }}>
               <Button variant="contained" color="success" size='small' startIcon={<CheckCircleIcon />} onClick={onDeleteSelected}>
                 Completar
               </Button>
             </div>
           </Box>
         </>
-      ) : (
+      ) : ( // Mostrar campo de búsqueda si no hay elementos seleccionados
         <StyledSearch
           value={filterName}
           onChange={onFilterName}

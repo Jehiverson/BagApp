@@ -1,12 +1,13 @@
-import { Button, Typography } from '@mui/material';
+// Importación de bibliotecas y componentes con enlaces a la documentación
+import { Button, Typography } from '@mui/material'; // Importación de componentes de Material-UI. Documentación: https://mui.com/components/text-fields/
 import React, { useEffect, useState } from 'react';
-import Select from 'react-select';
-import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import Select from 'react-select'; // Importación de react-select para selección de opciones. Documentación: https://react-select.com/
+import { useForm, Controller } from 'react-hook-form'; // Importación de react-hook-form para la gestión de formularios. Documentación: https://react-hook-form.com/
+import { toast } from 'react-toastify'; // Importación de react-toastify para notificaciones. Documentación: https://github.com/fkhadra/react-toastify
+import 'react-toastify/dist/ReactToastify.css'; // Estilos para react-toastify
 import SendIcon from '@mui/icons-material/Send';
-import { pagoUnion, cambioActividadPago } from '../../api/pagoApi';
-import { obtenerActividades } from '../../api/actividadApi';
+import { pagoUnion, cambioActividadPago } from '../../api/pagoApi'; // Importación de funciones personalizadas para la API de pagos.
+import { obtenerActividades } from '../../api/actividadApi'; // Importación de funciones personalizadas para la API de actividades.
 
 export const FormCambioEvento = () => {
   const { handleSubmit, control, reset } = useForm();
@@ -22,13 +23,12 @@ export const FormCambioEvento = () => {
       const idActividad = values.idActividad.value;
 
       await cambioActividadPago(idPago, idActividad);
-      toast.success("Cambio de Actividad Exitosa");
-
+      toast.success("Cambio de Actividad Exitosa"); // Muestra una notificación de éxito
       setSelectedClientePago(null);
       setSelectedClienteCambio(null);
       reset();
     } catch (error) {
-      toast.error("Actualizacion Denegada");
+      toast.error("Actualización Denegada"); // Muestra una notificación de error
       console.log(error);
     }
   });

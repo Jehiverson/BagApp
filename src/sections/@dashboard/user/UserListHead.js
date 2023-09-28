@@ -1,9 +1,8 @@
 import PropTypes from 'prop-types';
-// @mui
+// Importación de componentes y estilos desde Material-UI
 import { Box, Checkbox, TableRow, TableCell, TableHead, TableSortLabel } from '@mui/material';
 
-// ----------------------------------------------------------------------
-
+// Objeto para ocultar elementos visualmente
 const visuallyHidden = {
   border: 0,
   margin: -1,
@@ -16,6 +15,7 @@ const visuallyHidden = {
   clip: 'rect(0 0 0 0)',
 };
 
+// Propiedades esperadas para el componente UserListHead
 UserListHead.propTypes = {
   order: PropTypes.oneOf(['asc', 'desc']),
   orderBy: PropTypes.string,
@@ -24,8 +24,10 @@ UserListHead.propTypes = {
   numSelected: PropTypes.number,
   onRequestSort: PropTypes.func,
   onSelectAllClick: PropTypes.func,
+  showCheckbox: PropTypes.bool, // Propiedad adicional para mostrar o no el checkbox
 };
 
+// Componente principal UserListHead
 export default function UserListHead({
   order,
   orderBy,
@@ -34,21 +36,24 @@ export default function UserListHead({
   numSelected,
   onRequestSort,
   onSelectAllClick,
-  showCheckbox,
+  showCheckbox, // Propiedad para determinar si se muestra el checkbox
 }) {
+  // Función para manejar la solicitud de ordenamiento por columna
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
 
-  // Obtener el objeto de usuario desde localStorage
+  // Obtener el objeto de usuario desde el almacenamiento local
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   // Extraer el valor de 'tipoRol' del objeto de usuario
   const role = localStorageUser ? localStorageUser.tipoRol : null;
 
   return (
+    // Encabezado de la tabla
     <TableHead>
       <TableRow>
-      {showCheckbox && role === 'Administrador' && ( // Verificamos showCheckbox antes de renderizar el checkbox
+        {/* Renderizar el checkbox solo si showCheckbox es true y el rol es 'Administrador' */}
+        {showCheckbox && role === 'Administrador' && (
           <TableCell padding="checkbox">
             <Checkbox
               indeterminate={numSelected > 0 && numSelected < rowCount}
@@ -57,21 +62,26 @@ export default function UserListHead({
             />
           </TableCell>
         )}
+        {/* Iterar sobre las etiquetas de encabezado y crear las columnas */}
         {headLabel.map((headCell) => (
           <TableCell
             key={headCell.id}
             align={headCell.alignRight ? 'right' : 'left'}
             sortDirection={orderBy === headCell.id ? order : false}
           >
+            {/* Etiqueta para ordenar las columnas */}
             <TableSortLabel
-              hideSortIcon
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
+              hideSortIcon // Ocultar el ícono de ordenamiento por defecto
+              active={orderBy === headCell.id} // Marcar si la columna está activa
+              direction={orderBy === headCell.id ? order : 'asc'} // Dirección de ordenamiento
+              onClick={createSortHandler(headCell.id)} // Manejar el clic para ordenar
             >
               {headCell.label}
+              {/* Mostrar un mensaje visualmente oculto para indicar el orden actual */}
               {orderBy === headCell.id ? (
-                <Box sx={{ ...visuallyHidden }}>{order === 'desc' ? 'sorted descending' : 'sorted ascending'}</Box>
+                <Box sx={{ ...visuallyHidden }}>
+                  {order === 'desc' ? 'ordenado descendente' : 'ordenado ascendente'}
+                </Box>
               ) : null}
             </TableSortLabel>
           </TableCell>

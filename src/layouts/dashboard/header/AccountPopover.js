@@ -4,7 +4,7 @@ import { alpha } from '@mui/material/styles';
 import { Box, Divider, Typography, Stack, MenuItem, Avatar, IconButton, Popover } from '@mui/material';
 import LogoutButton from '../../../components/auth/LogoutButton';
 import { useAuth } from '../../../context/AuthContext';
-import account from '../../../_mock/account';
+import account from '../../../_mock/account'; // Se asume que esto es una importación de datos de cuenta ficticios.
 
 const MENU_OPTIONS = [
   {
@@ -15,25 +15,28 @@ const MENU_OPTIONS = [
 
 export default function AccountPopover() {
   const [open, setOpen] = useState(null);
-  const navigate = useNavigate(); // Obtiene la función navigate
+  const navigate = useNavigate(); // Obtiene la función navigate para la navegación en la aplicación.
 
+  // Función para abrir el popover.
   const handleOpen = (event) => {
     setOpen(event.currentTarget);
   };
 
+  // Función para cerrar el popover.
   const handleClose = () => {
     setOpen(null);
   };
 
+  // Obtiene información del usuario autenticado.
   const { user } = useAuth();
   const localStorageUser = JSON.parse(localStorage.getItem('user'));
   const username = localStorageUser ? localStorageUser.username : user.username;
   const email = localStorageUser ? localStorageUser.email : user.email;
 
-  // Función para manejar la redirección al hacer clic en "Home"
+  // Función para manejar la redirección al hacer clic en "Home".
   const handleHomeClick = () => {
-    navigate('/dashboard/home'); // Redirige a la página de inicio
-    handleClose(); // Cierra el menú después de redirigir
+    navigate('/dashboard/home'); // Redirige a la página de inicio.
+    handleClose(); // Cierra el menú después de redirigir.
   };
 
   return (
