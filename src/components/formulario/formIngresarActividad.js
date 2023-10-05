@@ -53,10 +53,6 @@ export const FormIngresarActividad = ({ closeNewEventModal, fetchEvents }) => {
                 value: 3,
                 message: "El Nombre debe tener al menos 3 letras",
               },
-              pattern: {
-                value: /^[A-Za-z]+$/,
-                message: "El Nombre solo puede contener letras",
-              },
             })} placeholder='Nombre de Actividad' style={{ marginRight: 15, width: 300 }} />
             {errors.nombreActividad && (
               <Typography variant="caption" color="error">
