@@ -19,7 +19,7 @@ export default function Home() {
 
         <Container maxWidth="xl"> {/* Contenedor de Material-UI con ancho máximo extra grande */}
           <Typography variant="h4" sx={{ mb: 5 }}>
-            ¡Hola! Bienvenido a Kingo Energy
+            ¡Hola! Bienvenido a BagApp
           </Typography>
           {/* Renderiza el componente de la página de inicio para administradores o usuarios */}
           {role === 'Administrador' || role === 'Usuario' ? (
